@@ -1,0 +1,54 @@
+import { db } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function GET(request: NextRequest) {
+  try {
+    const shifts = await db.shift.findMany({
+      where: { active: true },
+      include: {
+        _count: { select: { employeeShifts: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return NextResponse.json(shifts)
+  } catch (error: any) {
+    console.error('Error fetching shifts:', error)
+    return NextResponse.json({ error: 'Error al obtener los turnos' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { name, startTime, endTime, breakMinutes, toleranceMinutes, type, color } = body
+
+    if (!name || !startTime || !endTime) {
+      return NextResponse.json(
+        { error: 'Nombre, hora de inicio y hora de fin son requeridos' },
+        { status: 400 }
+      )
+    }
+
+    const shift = await db.shift.create({
+      data: {
+        name,
+        startTime,
+        endTime,
+        breakMinutes: breakMinutes ?? 0,
+        toleranceMinutes: toleranceMinutes ?? 15,
+        type: type ?? 'fixed',
+        color: color ?? '#10b981',
+        companyId: 'default',
+      },
+      include: {
+        _count: { select: { employeeShifts: true } },
+      },
+    })
+
+    return NextResponse.json(shift, { status: 201 })
+  } catch (error: any) {
+    console.error('Error creating shift:', error)
+    return NextResponse.json({ error: 'Error al crear el turno' }, { status: 500 })
+  }
+}

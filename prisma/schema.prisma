@@ -1,0 +1,424 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =====================
+// COMPANY (Empresa/Tenant)
+// =====================
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  taxId     String?
+  logo      String?
+  address   String?
+  city      String?
+  state     String?
+  country   String   @default("México")
+  phone     String?
+  email     String?
+  website   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches          Branch[]
+  departments       Department[]
+  positions         Position[]
+  employees         Employee[]
+  shifts            Shift[]
+  contractTemplates ContractTemplate[]
+  incidents         Incident[]
+  vacancies         Vacant[]
+  candidates        Candidate[]
+  attendanceRecords AttendanceRecord[]
+  contracts         Contract[]
+  notifications     AppNotification[]
+  users             User[]
+}
+
+// =====================
+// BRANCH (Sucursal)
+// =====================
+model Branch {
+  id             String   @id @default(cuid())
+  companyId      String
+  name           String
+  code           String?
+  address        String?
+  city           String?
+  state          String?
+  latitude       Float
+  longitude      Float
+  geofenceRadius Int      @default(100)
+  phone          String?
+  managerName    String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employees         Employee[]
+  attendanceRecords AttendanceRecord[]
+  qrCodes           QRCode[]
+}
+
+// =====================
+// DEPARTMENT (Departamento)
+// =====================
+model Department {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  managerName String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  positions  Position[]
+  employees  Employee[]
+  vacancies  Vacant[]
+}
+
+// =====================
+// POSITION (Puesto)
+// =====================
+model Position {
+  id           String   @id @default(cuid())
+  companyId    String
+  departmentId String
+  name         String
+  description  String?
+  salary       Float?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  employees  Employee[]
+  vacancies  Vacant[]
+}
+
+// =====================
+// EMPLOYEE (Empleado)
+// =====================
+model Employee {
+  id             String   @id @default(cuid())
+  companyId      String
+  branchId       String?
+  departmentId   String?
+  positionId     String?
+
+  firstName      String
+  lastName       String
+  email          String
+  phone          String?
+  curp           String?
+  rfc            String?
+  nss            String?
+  birthDate      String?
+  gender         String?
+  address        String?
+  city           String?
+  state          String?
+
+  employeeNumber String?  @unique
+  hireDate       String?
+  employmentType String   @default("full_time")
+  status         String   @default("active")
+
+  photo          String?
+  bloodType      String?
+
+  emergencyContact  String?
+  emergencyPhone    String?
+  emergencyRelation String?
+
+  bankName       String?
+  bankAccount    String?
+  bankClabe      String?
+
+  notes          String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch            Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  department        Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position          Position?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  attendanceRecords AttendanceRecord[]
+  contracts         Contract[]
+  incidents         Incident[]
+  documents         Document[]
+  notifications     AppNotification[]
+  employeeShifts    EmployeeShift[]
+  candidateId       String?           @unique
+  candidate         Candidate?         @relation(fields: [candidateId], references: [id])
+}
+
+// =====================
+// SHIFT (Turno)
+// =====================
+model Shift {
+  id               String   @id @default(cuid())
+  companyId        String
+  name             String
+  startTime        String
+  endTime          String
+  breakMinutes     Int      @default(0)
+  toleranceMinutes Int      @default(15)
+  type             String   @default("fixed")
+  color            String   @default("#10b981")
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeShifts EmployeeShift[]
+}
+
+// =====================
+// EMPLOYEE SHIFT ASSIGNMENT
+// =====================
+model EmployeeShift {
+  id            String   @id @default(cuid())
+  employeeId    String
+  shiftId       String
+  effectiveDate String
+  endDate       String?
+  daysOfWeek    String   @default("[1,2,3,4,5]")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift     Shift     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+}
+
+// =====================
+// QR CODE
+// =====================
+model QRCode {
+  id        String   @id @default(cuid())
+  branchId  String
+  code      String   @unique
+  expiresAt DateTime
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  branch            Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  attendanceRecords AttendanceRecord[]
+}
+
+// =====================
+// ATTENDANCE RECORD
+// =====================
+model AttendanceRecord {
+  id            String   @id @default(cuid())
+  companyId     String
+  branchId      String
+  employeeId    String
+  qrCodeId      String?
+  recordType    String
+  recordTime    DateTime @default(now())
+  scheduledTime DateTime?
+  latitude      Float?
+  longitude     Float?
+  gpsAccuracy   Float?
+  selfieUrl     String?
+  status        String   @default("on_time")
+  minutesDiff   Int?
+  fraudFlags    String?
+  deviceInfo    String?
+  ipAddress     String?
+  notes         String?
+  verified      Boolean  @default(false)
+  verifiedBy    String?
+  verifiedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  qrCode   QRCode?  @relation(fields: [qrCodeId], references: [id])
+}
+
+// =====================
+// CONTRACT TEMPLATE
+// =====================
+model ContractTemplate {
+  id                  String   @id @default(cuid())
+  companyId           String
+  name                String
+  type                String
+  content             String
+  defaultDurationDays Int?
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contracts Contract[]
+}
+
+// =====================
+// CONTRACT
+// =====================
+model Contract {
+  id                String   @id @default(cuid())
+  templateId        String
+  employeeId        String
+  companyId         String
+  content           String
+  startDate         String
+  endDate           String?
+  status            String   @default("active")
+  signedAt          DateTime?
+  signedDocumentUrl String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  template ContractTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  employee Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+// =====================
+// INCIDENT
+// =====================
+model Incident {
+  id          String   @id @default(cuid())
+  companyId   String
+  employeeId  String
+  reportedBy  String?
+  type        String
+  title       String
+  description String
+  severity    String   @default("medium")
+  date        String
+  status      String   @default("open")
+  witnesses   String?
+  sanctions   String?
+  resolution  String?
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// =====================
+// VACANT (Vacante)
+// =====================
+model Vacant {
+  id             String   @id @default(cuid())
+  companyId      String
+  departmentId   String?
+  positionId     String?
+  title          String
+  description    String?
+  requirements   String?
+  salaryMin      Float?
+  salaryMax      Float?
+  employmentType String   @default("full_time")
+  location       String?
+  status         String   @default("open")
+  vacanciesCount Int      @default(1)
+  publishedAt    DateTime?
+  closesAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position   Position?   @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  candidates Candidate[]
+}
+
+// =====================
+// CANDIDATE
+// =====================
+model Candidate {
+  id            String   @id @default(cuid())
+  vacantId      String
+  companyId     String
+  firstName     String
+  lastName      String
+  email         String
+  phone         String?
+  cvUrl         String?
+  coverLetter   String?
+  status        String   @default("applied")
+  interviewDate String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vacant   Vacant   @relation(fields: [vacantId], references: [id], onDelete: Cascade)
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee Employee?
+}
+
+// =====================
+// DOCUMENT
+// =====================
+model Document {
+  id         String   @id @default(cuid())
+  employeeId String
+  type       String
+  name       String
+  fileUrl    String?
+  fileSize   Int?
+  notes      String?
+  uploadedAt DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// =====================
+// NOTIFICATION
+// =====================
+model AppNotification {
+  id         String   @id @default(cuid())
+  companyId  String
+  employeeId String?
+  type       String
+  title      String
+  message    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+}
+
+// =====================
+// USER (System Admin Users)
+// =====================
+model User {
+  id           String    @id @default(cuid())
+  companyId    String
+  name         String
+  email        String
+  passwordHash String
+  role         String    @default("admin")
+  active       Boolean   @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([email, companyId])
+}
