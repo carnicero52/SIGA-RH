@@ -1,9 +1,16 @@
-import { db } from '../src/lib/db'
+import 'dotenv/config'
+import { PrismaClient } from '@prisma/client'
 import { hash } from 'bcryptjs'
 import { v4 as uuid } from 'uuid'
 
+// Seed uses DIRECT_URL via DATABASE_URL env var — standard Prisma connection
+const db = new PrismaClient({
+  log: ['error'],
+})
+
 async function main() {
-  console.log('🌱 Seeding database...')
+  console.log('🌱 Seeding Neon database...')
+  console.log(`   DB URL: ${process.env.DIRECT_URL?.substring(0, 60)}...`)
 
   // Clean existing data
   const tables = [
@@ -25,6 +32,7 @@ async function main() {
       email: 'admin@siga-demo.com', website: 'https://siga-demo.com', active: true,
     },
   })
+  console.log('   ✓ Company created')
 
   // User
   const passwordHash = await hash('admin123', 10)
@@ -34,6 +42,7 @@ async function main() {
       email: 'admin@siga-demo.com', passwordHash, role: 'super_admin', active: true,
     },
   })
+  console.log('   ✓ User created')
 
   // Branches
   const branches = await Promise.all([
@@ -41,6 +50,7 @@ async function main() {
     db.branch.create({ data: { companyId: company.id, name: 'Sucursal Norte', code: 'SN-002', address: 'Blvd. Norte 200, Col. Industrial', city: 'Ciudad de México', state: 'CDMX', latitude: 19.4517, longitude: -99.1264, geofenceRadius: 100, phone: '+52 55 9876 5432', managerName: 'María López', active: true } }),
     db.branch.create({ data: { companyId: company.id, name: 'Sucursal Sur', code: 'SS-003', address: 'Av. Universidad 800, Col. Copilco', city: 'Ciudad de México', state: 'CDMX', latitude: 19.3835, longitude: -99.1704, geofenceRadius: 120, phone: '+52 55 5555 1234', managerName: 'Ana García', active: true } }),
   ])
+  console.log(`   ✓ ${branches.length} branches created`)
 
   // Departments
   const depts = await Promise.all([
@@ -50,6 +60,7 @@ async function main() {
     db.department.create({ data: { companyId: company.id, name: 'Operaciones', description: 'Logística y control de calidad', managerName: 'Roberto Sánchez', active: true } }),
     db.department.create({ data: { companyId: company.id, name: 'Contabilidad', description: 'Gestión financiera y fiscal', managerName: 'Laura Torres', active: true } }),
   ])
+  console.log(`   ✓ ${depts.length} departments created`)
 
   // Positions
   const positions = await Promise.all([
@@ -62,6 +73,7 @@ async function main() {
     db.position.create({ data: { companyId: company.id, departmentId: depts[3].id, name: 'Operario', description: 'Personal operativo', salary: 15000, active: true } }),
     db.position.create({ data: { companyId: company.id, departmentId: depts[4].id, name: 'Contador', description: 'Gestión contable y fiscal', salary: 28000, active: true } }),
   ])
+  console.log(`   ✓ ${positions.length} positions created`)
 
   // Shifts
   const shifts = await Promise.all([
@@ -70,6 +82,7 @@ async function main() {
     db.shift.create({ data: { companyId: company.id, name: 'Nocturno', startTime: '22:00', endTime: '06:00', breakMinutes: 30, toleranceMinutes: 10, type: 'fixed', color: '#6366f1', active: true } }),
     db.shift.create({ data: { companyId: company.id, name: 'Administrativo', startTime: '09:00', endTime: '18:00', breakMinutes: 60, toleranceMinutes: 15, type: 'flexible', color: '#ec4899', active: true } }),
   ])
+  console.log(`   ✓ ${shifts.length} shifts created`)
 
   // Employees
   const empData = [
@@ -103,6 +116,7 @@ async function main() {
       },
     })
   ))
+  console.log(`   ✓ ${employees.length} employees created`)
 
   // Assign shifts
   await Promise.all(employees.map((emp, i) =>
@@ -111,7 +125,7 @@ async function main() {
     })
   ))
 
-  // Generate attendance for last 7 days (faster than 30)
+  // Generate attendance for last 7 days
   const now = new Date()
   const attendanceBatch: any[] = []
   for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
@@ -120,7 +134,7 @@ async function main() {
     if (date.getDay() === 0 || date.getDay() === 6) continue
 
     for (const emp of employees) {
-      if (Math.random() < 0.06) continue // 6% absence
+      if (Math.random() < 0.06) continue
 
       const empShift = shifts[empData[employees.indexOf(emp)]?.s ?? 0]
       const [sH, sM] = empShift.startTime.split(':').map(Number)
@@ -157,16 +171,17 @@ async function main() {
     }
   }
 
-  // Insert attendance in batches
   for (let i = 0; i < attendanceBatch.length; i += 50) {
     await db.attendanceRecord.createMany({ data: attendanceBatch.slice(i, i + 50) })
   }
+  console.log(`   ✓ ${attendanceBatch.length} attendance records created`)
 
   // QR codes
   for (const branch of branches) {
     const exp = new Date(); exp.setDate(exp.getDate() + 1)
     await db.qRCode.create({ data: { branchId: branch.id, code: uuid(), expiresAt: exp, active: true } })
   }
+  console.log('   ✓ QR codes created')
 
   // Incidents
   await db.incident.createMany({ data: [
@@ -174,19 +189,22 @@ async function main() {
     { companyId: company.id, employeeId: employees[11].id, reportedBy: 'Roberto Sánchez', type: 'absence', title: 'Inasistencia no justificada', description: 'Falta sin aviso previo.', severity: 'medium', date: '2025-03-20', status: 'open' },
     { companyId: company.id, employeeId: employees[2].id, type: 'policy_violation', title: 'Uso de celular', description: 'Uso frecuente del teléfono personal durante horas de trabajo.', severity: 'low', date: '2025-03-22', status: 'resolved', resolution: 'Recordatorio de políticas' },
   ]})
+  console.log('   ✓ Incidents created')
 
   // Contract templates
   await db.contractTemplate.createMany({ data: [
-    { companyId: company.id, name: 'Contrato Individual de Trabajo', type: 'individual_work', content: '<h1>CONTRATO INDIVIDUAL DE TRABAJO</h1><p>Contrato que celebran por una parte {{company_name}} representada por {{company_representative}} y por la otra {{employee_name}}...</p>', defaultDurationDays: 365, active: true },
+    { companyId: company.id, name: 'Contrato Individual de Trabajo', type: 'individual_work', content: '<h1>CONTRATO INDIVIDUAL DE TRABAJO</h1><p>Contrato que celebran por una parte {{company_name}} y por la otra {{employee_name}}...</p>', defaultDurationDays: 365, active: true },
     { companyId: company.id, name: 'Carta Poder', type: 'power_of_attorney', content: '<h1>CARTA PODER</h1><p>Yo, {{employee_name}}, mayor de edad, otorgo poder amplio a...</p>', defaultDurationDays: 180, active: true },
     { companyId: company.id, name: 'Acuerdo de Confidencialidad', type: 'nda', content: '<h1>NDA</h1><p>El empleado {{employee_name}} se compromete a mantener confidencialidad...</p>', defaultDurationDays: 730, active: true },
   ]})
+  console.log('   ✓ Contract templates created')
 
   // Vacancies
   const vacants = await Promise.all([
     db.vacant.create({ data: { companyId: company.id, departmentId: depts[1].id, positionId: positions[2].id, title: 'Desarrollador Full Stack', description: 'Buscamos desarrollador con experiencia en React y Node.js', requirements: '["React, Node.js, TypeScript", "2+ años experiencia", "SQL"]', salaryMin: 35000, salaryMax: 50000, employmentType: 'full_time', location: 'CDMX', status: 'open', vacanciesCount: 2, publishedAt: new Date('2025-03-01') } }),
     db.vacant.create({ data: { companyId: company.id, departmentId: depts[3].id, positionId: positions[6].id, title: 'Operario de Producción', description: 'Operario con experiencia en línea de producción', requirements: '["Preparatoria", "Manufactura", "Disponibilidad"]', salaryMin: 14000, salaryMax: 17000, employmentType: 'full_time', location: 'CDMX Norte', status: 'open', vacanciesCount: 3, publishedAt: new Date('2025-03-10') } }),
   ])
+  console.log('   ✓ Vacancies created')
 
   // Candidates
   await db.candidate.createMany({ data: [
@@ -196,6 +214,7 @@ async function main() {
     { vacantId: vacants[1].id, companyId: company.id, firstName: 'Jesús', lastName: 'Morales', email: 'jesus.m@email.com', status: 'screening' },
     { vacantId: vacants[1].id, companyId: company.id, firstName: 'Rosa', lastName: 'Figueroa', email: 'rosa.f@email.com', status: 'interview', interviewDate: '2025-04-08' },
   ]})
+  console.log('   ✓ Candidates created')
 
   // Notifications
   await db.appNotification.createMany({ data: [
@@ -204,8 +223,10 @@ async function main() {
     { companyId: company.id, type: 'incident', title: 'Nueva incidencia', message: 'Inasistencia registrada para Andrés Romero.', read: true },
     { companyId: company.id, type: 'system', title: 'Bienvenido a SIGA-RH', message: 'Sistema de Gestión de Asistencia y Recursos Humanos v2.0.', read: true },
   ]})
+  console.log('   ✓ Notifications created')
 
-  console.log('✅ Seed completed!')
+  console.log('')
+  console.log('✅ Seed completed successfully!')
   console.log(`   Company: ${company.name}`)
   console.log(`   Branches: ${branches.length}`)
   console.log(`   Departments: ${depts.length}`)
@@ -213,7 +234,8 @@ async function main() {
   console.log(`   Employees: ${employees.length}`)
   console.log(`   Shifts: ${shifts.length}`)
   console.log(`   Attendance records: ${attendanceBatch.length}`)
-  console.log(`   User: admin@siga-demo.com / admin123`)
+  console.log('')
+  console.log('🔑 Login: admin@siga-demo.com / admin123')
 }
 
 main().catch(console.error).finally(() => db.$disconnect())

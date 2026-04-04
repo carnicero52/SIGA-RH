@@ -618,3 +618,29 @@ Stage Summary:
 - Both views have back navigation buttons to return to dashboard
 - Fixed SSR hydration issue with window.innerWidth in QR display
 - 3 files modified: main-layout.tsx, qr-display-view.tsx, check-in-view.tsx
+---
+Task ID: 12
+Agent: Main Agent
+Task: Configure SIGA-RH to use Neon PostgreSQL database
+
+Work Log:
+- Read and analyzed current setup: SQLite (file:/db/custom.db), Prisma schema with 15 models, seed with 15 employees + 130 attendance records
+- Updated `prisma/schema.prisma`: changed provider from "sqlite" to "postgresql", added directUrl env for migrations
+- Updated `.env`: replaced SQLite URL with Neon PostgreSQL pooler URL and direct URL (removed channel_binding for compatibility)
+- Installed packages: @prisma/adapter-neon, @neondatabase/serverless, ws, @types/ws, dotenv
+- Updated `prisma/seed.ts`: added dotenv/config import, uses DIRECT_URL for seed operations, uses standard PrismaClient (not Neon adapter) for compatibility
+- Ran `prisma db push --accept-data-loss` → Successfully created all 15 tables in Neon
+- Ran seed → Successfully created: 1 company, 1 user, 3 branches, 5 departments, 8 positions, 4 shifts, 15 employees, 130 attendance records, QR codes, 3 incidents, 3 contract templates, 2 vacancies, 5 candidates, 4 notifications
+- Updated `src/lib/db.ts`: simplified to use standard PrismaClient (Prisma reads .env automatically via schema.prisma datasource config)
+- Verified: bun connection test to Neon returns correct data (Company: Corporativo SIGA Demo, 15 employees, 130 attendance records)
+- Verified: Next.js dev server compiles and serves GET / 200 with Neon database
+- ESLint: 0 errors
+
+Stage Summary:
+- SIGA-RH now runs on Neon PostgreSQL (cloud database, accessible from anywhere)
+- DATABASE_URL (pooler): postgresql://neondb_owner:***@ep-gentle-bird-ampahg9d-pooler.c-5.us-east-1.aws.neon.tech/neondb
+- DIRECT_URL (migrations): postgresql://neondb_owner:***@ep-gentle-bird-ampahg9d.c-5.us-east-1.aws.neon.tech/neondb
+- All 15 Prisma models migrated successfully
+- Demo data seeded: login admin@siga-demo.com / admin123
+- Files modified: .env, prisma/schema.prisma, prisma/seed.ts, src/lib/db.ts
+- Packages added: @prisma/adapter-neon, @neondatabase/serverless, ws, @types/ws, dotenv
