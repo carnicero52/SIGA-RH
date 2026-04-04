@@ -105,8 +105,8 @@ export function AppSidebar() {
       >
         {/* Logo */}
         <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold text-sm">
-            SG
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary/10 overflow-hidden">
+            <img src="/logo.png" alt="SIGA-RH" className="h-7 w-7 object-contain" />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-bold tracking-tight truncate">{companyName}</h1>
@@ -189,7 +189,9 @@ export function AppSidebar() {
 }
 
 export function AppHeader() {
-  const { currentView, toggleSidebar, navigate } = useAppStore()
+  const { currentView, toggleSidebar } = useAppStore()
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [notifOpen, setNotifOpen] = useState(false)
 
   const viewTitles: Record<string, string> = {
     dashboard: 'Dashboard',
@@ -210,6 +212,29 @@ export function AppHeader() {
     settings: 'Configuración',
   }
 
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      try {
+        const res = await fetch('/api/notifications')
+        if (res.ok) {
+          const data = await res.json()
+          setNotifications(Array.isArray(data) ? data.slice(0, 8) : [])
+        }
+      } catch {}
+    }
+    if (useAppStore.getState().isAuthenticated) fetchNotifs()
+  }, [currentView])
+
+  const unreadCount = notifications.filter((n) => !n.read).length
+
+  const typeIcons: Record<string, string> = {
+    attendance: '🟢',
+    incident: '🟡',
+    contract: '📄',
+    system: '⚙️',
+    alert: '🔴',
+  }
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-6">
       <button
@@ -224,12 +249,50 @@ export function AppHeader() {
       </div>
 
       {/* Notification bell */}
-      <button
-        onClick={() => navigate('dashboard')}
-        className="relative p-2 rounded-md hover:bg-accent transition-colors"
-      >
-        <Bell className="h-5 w-5 text-muted-foreground" />
-      </button>
+      <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>
+        <DropdownMenuTrigger asChild>
+          <button className="relative p-2 rounded-md hover:bg-accent transition-colors">
+            <Bell className="h-5 w-5 text-muted-foreground" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuLabel className="flex items-center justify-between">
+            <span>Notificaciones</span>
+            {unreadCount > 0 && (
+              <Badge variant="secondary" className="text-[10px]">{unreadCount} nuevas</Badge>
+            )}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {notifications.length === 0 ? (
+            <div className="py-6 text-center">
+              <Bell className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Sin notificaciones</p>
+            </div>
+          ) : (
+            notifications.map((notif: any) => (
+              <DropdownMenuItem key={notif.id} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
+                <div className="flex items-center gap-2 w-full">
+                  <span className="text-sm">{typeIcons[notif.type] || '🔔'}</span>
+                  <span className={cn('text-sm font-medium flex-1 truncate', !notif.read && 'text-foreground')}>
+                    {notif.title}
+                  </span>
+                  {!notif.read && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-1 pl-6">{notif.message}</p>
+                <p className="text-[10px] text-muted-foreground/60 pl-6">
+                  {new Date(notif.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                  {' '}{new Date(notif.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </DropdownMenuItem>
+            ))
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   )
 }
