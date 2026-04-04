@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 
 export type ViewType =
+  | 'landing'
+  | 'register'
   | 'login'
   | 'dashboard'
   | 'employees'
@@ -57,10 +59,10 @@ export const useAppStore = create<AppState>((set) => ({
   user: null,
   isAuthenticated: false,
   login: (user) => set({ user, isAuthenticated: true, currentView: 'dashboard' }),
-  logout: () => set({ user: null, isAuthenticated: false, currentView: 'login' }),
+  logout: () => set({ user: null, isAuthenticated: false, currentView: 'landing' }),
 
   // Navigation
-  currentView: 'login',
+  currentView: 'landing' as ViewType,
   viewParams: {},
   navigate: (view, params = {}) => set({ currentView: view, viewParams: params }),
 

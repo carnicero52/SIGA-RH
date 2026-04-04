@@ -10,7 +10,7 @@ import { Shield, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function LoginView() {
-  const { login, setCompany } = useAppStore()
+  const { login, setCompany, navigate } = useAppStore()
   const [email, setEmail] = useState('admin@siga-demo.com')
   const [password, setPassword] = useState('admin123')
   const [showPassword, setShowPassword] = useState(false)
@@ -114,7 +114,24 @@ export function LoginView() {
           </CardContent>
         </Card>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
+        <div className="mt-4 text-center text-sm">
+          <span className="text-muted-foreground">¿No tienes cuenta? </span>
+          <button
+            onClick={() => navigate('register')}
+            className="font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+          >
+            Regístrate aquí
+          </button>
+        </div>
+
+        <button
+          onClick={() => navigate('landing')}
+          className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto"
+        >
+          ← Volver al inicio
+        </button>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
           SIGA-RH v2.0 &mdash; Control de Asistencia Inteligente y Antifraude
         </p>
       </div>

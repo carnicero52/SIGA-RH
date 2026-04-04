@@ -2,6 +2,8 @@
 
 import { useAppStore } from '@/store/app-store'
 import { AppSidebar, AppHeader } from './app-sidebar'
+import { LandingView } from '@/components/views/landing-view'
+import { RegisterView } from '@/components/views/register-view'
 import { LoginView } from '@/components/views/login-view'
 import { DashboardView } from '@/components/views/dashboard-view'
 import { EmployeesView } from '@/components/views/employees-view'
@@ -22,6 +24,8 @@ import { ReportsView } from '@/components/views/reports-view'
 import { CompanyView } from '@/components/views/company-view'
 
 const views: Record<string, React.ComponentType<any>> = {
+  landing: LandingView,
+  register: RegisterView,
   login: LoginView,
   dashboard: DashboardView,
   employees: EmployeesView,
@@ -45,8 +49,13 @@ const views: Record<string, React.ComponentType<any>> = {
 export function MainLayout() {
   const { currentView, isAuthenticated } = useAppStore()
 
-  if (!isAuthenticated || currentView === 'login') {
-    return <LoginView />
+  if (!isAuthenticated) {
+    const publicViews = ['landing', 'register', 'login']
+    if (publicViews.includes(currentView)) {
+      const ViewComponent = views[currentView]
+      return ViewComponent ? <ViewComponent /> : <LandingView />
+    }
+    return <LandingView />
   }
 
   const ViewComponent = views[currentView]
