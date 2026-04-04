@@ -43,6 +43,7 @@ function authHeaders() {
 const emptyForm = {
   firstName: '', lastName: '', email: '', phone: '',
   curp: '', rfc: '', nss: '', birthDate: '', gender: '',
+  address: '', city: '', state: '',
   employeeNumber: '', hireDate: '', employmentType: 'full_time', status: 'active',
   branchId: '', departmentId: '', positionId: '',
   bloodType: '',
@@ -234,7 +235,7 @@ function EmployeeFormDialog({
                 </div>
                 <div className="space-y-2">
                   <Label>Género</Label>
-                  <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
+                  <Select value={form.gender || undefined} onValueChange={(v) => setForm({ ...form, gender: v })}>
                     <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="M">Masculino</SelectItem>
@@ -242,6 +243,33 @@ function EmployeeFormDialog({
                       <SelectItem value="other">Otro</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <Label>Dirección</Label>
+                <Input
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  placeholder="Calle, número, colonia..."
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Ciudad</Label>
+                  <Input
+                    value={form.city}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    placeholder="Ciudad"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Estado</Label>
+                  <Input
+                    value={form.state}
+                    onChange={(e) => setForm({ ...form, state: e.target.value })}
+                    placeholder="Estado"
+                  />
                 </div>
               </div>
               <Separator />
@@ -277,7 +305,7 @@ function EmployeeFormDialog({
                 </div>
                 <div className="space-y-2">
                   <Label>Tipo de Sangre</Label>
-                  <Select value={form.bloodType} onValueChange={(v) => setForm({ ...form, bloodType: v })}>
+                  <Select value={form.bloodType || undefined} onValueChange={(v) => setForm({ ...form, bloodType: v })}>
                     <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bt) => (
@@ -336,33 +364,33 @@ function EmployeeFormDialog({
               <Separator />
               <div className="space-y-2">
                 <Label>Sucursal</Label>
-                <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+                <Select value={form.branchId || undefined} onValueChange={(v) => setForm({ ...form, branchId: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar sucursal" /></SelectTrigger>
                   <SelectContent>
-                    {branches.filter((b) => b.active).map((b) => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}{!b.active ? ' (Inactiva)' : ''}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Departamento</Label>
-                <Select value={form.departmentId} onValueChange={(v) => setForm({ ...form, departmentId: v })}>
+                <Select value={form.departmentId || undefined} onValueChange={(v) => setForm({ ...form, departmentId: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar departamento" /></SelectTrigger>
                   <SelectContent>
-                    {departments.filter((d) => d.active).map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}{!d.active ? ' (Inactivo)' : ''}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Puesto</Label>
-                <Select value={form.positionId} onValueChange={(v) => setForm({ ...form, positionId: v })}>
+                <Select value={form.positionId || undefined} onValueChange={(v) => setForm({ ...form, positionId: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar puesto" /></SelectTrigger>
                   <SelectContent>
-                    {positions.filter((p) => p.active).map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    {positions.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}{!p.active ? ' (Inactivo)' : ''}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -391,7 +419,7 @@ function EmployeeFormDialog({
               </div>
               <div className="space-y-2">
                 <Label>Parentesco</Label>
-                <Select value={form.emergencyRelation} onValueChange={(v) => setForm({ ...form, emergencyRelation: v })}>
+                <Select value={form.emergencyRelation || undefined} onValueChange={(v) => setForm({ ...form, emergencyRelation: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Esposo/a">Esposo/a</SelectItem>
@@ -607,10 +635,13 @@ export function EmployeesView() {
       nss: emp.nss || '',
       birthDate: emp.birthDate || '',
       gender: emp.gender || '',
+      address: emp.address || '',
+      city: emp.city || '',
+      state: emp.state || '',
       employeeNumber: emp.employeeNumber || '',
       hireDate: emp.hireDate || '',
-      employmentType: emp.employmentType,
-      status: emp.status,
+      employmentType: emp.employmentType || 'full_time',
+      status: emp.status || 'active',
       branchId: emp.branchId || '',
       departmentId: emp.departmentId || '',
       positionId: emp.positionId || '',

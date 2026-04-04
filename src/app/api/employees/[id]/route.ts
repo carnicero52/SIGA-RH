@@ -66,6 +66,7 @@ export async function PUT(
     const {
       firstName, lastName, email, phone,
       curp, rfc, nss, birthDate, gender,
+      address, city, state: empState,
       employeeNumber, hireDate, employmentType, status,
       branchId, departmentId, positionId,
       bloodType,
@@ -117,6 +118,9 @@ export async function PUT(
         ...(nss !== undefined && { nss: nss?.trim() || null }),
         ...(birthDate !== undefined && { birthDate: birthDate || null }),
         ...(gender !== undefined && { gender: gender || null }),
+        ...(address !== undefined && { address: address?.trim() || null }),
+        ...(city !== undefined && { city: city?.trim() || null }),
+        ...(empState !== undefined && { state: empState?.trim() || null }),
         ...(employeeNumber !== undefined && { employeeNumber: employeeNumber?.trim() || null }),
         ...(hireDate !== undefined && { hireDate: hireDate || null }),
         ...(employmentType !== undefined && { employmentType: employmentType || 'full_time' }),

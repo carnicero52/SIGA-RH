@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
     const {
       firstName, lastName, email, phone,
       curp, rfc, nss, birthDate, gender,
+      address, city, state: empState,
       employeeNumber, hireDate, employmentType, status,
       branchId, departmentId, positionId,
       bloodType,
@@ -122,6 +123,9 @@ export async function POST(request: NextRequest) {
         nss: nss?.trim() || null,
         birthDate: birthDate || null,
         gender: gender || null,
+        address: address?.trim() || null,
+        city: city?.trim() || null,
+        state: empState?.trim() || null,
         employeeNumber: employeeNumber?.trim() || null,
         hireDate: hireDate || null,
         employmentType: employmentType || 'full_time',

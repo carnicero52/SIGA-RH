@@ -401,3 +401,27 @@ Stage Summary:
   - Demo data seeded: 15 employees, 129 attendance records, full org structure
   - Zero lint errors
   - ~9,400 lines of view code, ~2,500 lines of API code
+
+---
+Task ID: 10
+Agent: Main Agent
+Task: Fix employee editing errors in SIGA-RH
+
+Work Log:
+- Analyzed employees-view.tsx, API routes, Prisma schema, and types to identify editing issues
+- Found 3 root causes:
+  1. Missing `address`, `city`, `state` fields in the edit form (existed in schema but not editable)
+  2. Select components receiving empty string `value=""` when no selection made — Radix UI Select doesn't match any SelectItem, causing rendering issues
+  3. Select dropdowns filtered by `active` only, hiding currently-assigned but deactivated items
+- Fixed employees-view.tsx:
+  - Added `address`, `city`, `state` to emptyForm and handleEdit function
+  - Added address/city/state input fields in the "Datos Personales" tab
+  - Changed all Select `value` props from `value={form.field}` to `value={form.field || undefined}` to properly show placeholder when empty
+  - Removed `.filter(b => b.active)` from branch/department/position Select options so deactivated items are visible (marked with "(Inactiva)" label)
+- Fixed API PUT /api/employees/[id]/route.ts: added `address`, `city`, `state` field handling (aliased `state` as `empState` to avoid JS keyword conflict)
+- Fixed API POST /api/employees/route.ts: added `address`, `city`, `state` field handling
+- Verified: ESLint passes with 0 errors, dev server compiles successfully
+
+Stage Summary:
+- Employee editing now works correctly: all fields editable, Select components handle empty values, deactivated items visible in dropdowns
+- 3 files modified: employees-view.tsx, api/employees/[id]/route.ts, api/employees/route.ts
