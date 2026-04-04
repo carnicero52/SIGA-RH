@@ -84,6 +84,7 @@ export function QRDisplayView() {
     id: string
     code: string
     expiresAt: string
+    qrUrl?: string
     branch?: { name: string }
   } | null>(null)
   const [loading, setLoading] = useState(false)
@@ -399,7 +400,7 @@ export function QRDisplayView() {
               <div className="absolute top-0 left-0 h-1 w-full bg-emerald-500" />
               <CardContent className="flex flex-col items-center gap-6 p-6 sm:p-10">
                 <QRCodeSVG
-                  value={currentQR.code}
+                  value={currentQR.qrUrl || (isClient ? `${window.location.origin}/attendance?qrcode=${currentQR.code}` : `/attendance?qrcode=${currentQR.code}`)}
                   size={isClient && window.innerWidth < 640 ? 280 : 400}
                   bgColor="transparent"
                   fgColor="#059669"

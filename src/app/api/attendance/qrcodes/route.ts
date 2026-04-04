@@ -64,7 +64,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(qrcode, { status: 201 })
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || 'https://siga-rh-7oew.vercel.app'
+    const qrUrl = `${baseUrl}/attendance?qrcode=${qrcode.code}`
+
+    return NextResponse.json({ ...qrcode, qrUrl }, { status: 201 })
   } catch (error: any) {
     console.error('Error generating QR code:', error)
     return NextResponse.json({ error: 'Error al generar el código QR' }, { status: 500 })
