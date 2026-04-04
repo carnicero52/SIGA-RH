@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { QrCode, Monitor, Clock, RefreshCw, Maximize, Minimize, MapPin } from 'lucide-react'
+import { QrCode, Monitor, Clock, RefreshCw, Maximize, Minimize, MapPin, ArrowLeft } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store/app-store'
@@ -75,6 +75,7 @@ function formatCountdown(ms: number): string {
 
 export function QRDisplayView() {
   const companyName = useAppStore((s) => s.companyName) || 'SIGA-RH'
+  const navigate = useAppStore((s) => s.navigate)
 
   // State
   const [branches, setBranches] = useState<Branch[]>([])
@@ -88,6 +89,12 @@ export function QRDisplayView() {
   const [loading, setLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+
+  // Avoid SSR hydration mismatch
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // -------------------------------------------------------------------------
   // Clock – update every second
@@ -245,6 +252,14 @@ export function QRDisplayView() {
       {/* ── Header Bar ─────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between border-b border-emerald-200 dark:border-emerald-900 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm px-4 py-2.5 sm:px-6">
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('dashboard')}
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <Monitor className="h-5 w-5 text-emerald-600" />
           <span className="text-lg font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
             {companyName}
@@ -385,7 +400,7 @@ export function QRDisplayView() {
               <CardContent className="flex flex-col items-center gap-6 p-6 sm:p-10">
                 <QRCodeSVG
                   value={currentQR.code}
-                  size={typeof window !== 'undefined' && window.innerWidth < 640 ? 280 : 400}
+                  size={isClient && window.innerWidth < 640 ? 280 : 400}
                   bgColor="transparent"
                   fgColor="#059669"
                   level="H"

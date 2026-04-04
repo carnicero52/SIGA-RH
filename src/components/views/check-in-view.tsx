@@ -13,10 +13,11 @@ import {
 } from '@/components/ui/select'
 import {
   Camera, QrCode, MapPin, Clock, CheckCircle2, XCircle, ArrowLeft,
-  RefreshCw, User, Smartphone,
+  RefreshCw, User, Smartphone, LayoutDashboard,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useAppStore } from '@/store/app-store'
 import type { Employee } from '@/lib/types'
 // html5-qrcode dynamically imported in startScanner to avoid SSR issues
 
@@ -64,6 +65,8 @@ function authHeaders(): HeadersInit {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function CheckInView() {
+  const navigate = useAppStore((s) => s.navigate)
+
   // State machine
   const [step, setStep] = useState<Step>('idle')
 
@@ -479,9 +482,20 @@ export function CheckInView() {
   return (
     <div className="mx-auto max-w-md space-y-4 pb-8">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Marcar Asistencia</h1>
-        <p className="text-sm text-muted-foreground mt-1">{formatDateES()}</p>
+      <div className="flex items-center gap-3 mb-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('dashboard')}
+          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="text-center flex-1">
+          <h1 className="text-2xl font-bold tracking-tight">Marcar Asistencia</h1>
+          <p className="text-sm text-muted-foreground mt-1">{formatDateES()}</p>
+        </div>
+        <div className="w-8" /> {/* Spacer to center the title */}
       </div>
 
       {/* ── Employee Select ────────────────────────────────────────────────── */}

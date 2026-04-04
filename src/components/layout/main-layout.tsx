@@ -51,6 +51,20 @@ export function MainLayout() {
 
   const ViewComponent = views[currentView]
 
+  // Full-screen views (no sidebar/header) for TV displays and mobile check-in
+  const fullScreenViews = ['qr-display', 'check-in']
+  if (fullScreenViews.includes(currentView)) {
+    return ViewComponent ? (
+      <div className="min-h-screen">
+        <ViewComponent />
+      </div>
+    ) : (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Vista no encontrada</p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <AppSidebar />

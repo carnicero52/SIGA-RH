@@ -592,3 +592,29 @@ Created 1 file, installed 1 package:
 - ESLint: 0 errors, 0 warnings
 - TypeScript compiles correctly
 - Follows project patterns: 'use client', auth headers, sonner toasts, responsive classes
+---
+Task ID: 11
+Agent: Main Agent
+Task: Fix QR Display and Check-in views - full-screen rendering and navigation
+
+Work Log:
+- Identified issue: QR Display and Check-in views were rendered inside main-layout with sidebar/header, preventing true full-screen display for TV/monitor use
+- Modified `src/components/layout/main-layout.tsx`: Added `fullScreenViews` array containing 'qr-display' and 'check-in'; these views now render without sidebar/header in a full-screen wrapper
+- Modified `src/components/views/qr-display-view.tsx`:
+  - Added `isClient` state with useEffect to avoid SSR hydration mismatch with `window.innerWidth`
+  - Added `ArrowLeft` import from lucide-react
+  - Added `navigate` from useAppStore for back navigation
+  - Added back-to-dashboard button in header bar (ArrowLeft icon, ghost variant)
+  - Changed QR code size to use `isClient` check instead of `typeof window !== 'undefined'`
+- Modified `src/components/views/check-in-view.tsx`:
+  - Added `LayoutDashboard` import (unused but available)
+  - Added `useAppStore` import and `navigate` from store
+  - Restructured header to include centered title with back-to-dashboard button (ArrowLeft icon, ghost variant) and spacer for visual centering
+- ESLint: 0 errors, 0 warnings
+- Dev server compiles successfully (GET / 200)
+
+Stage Summary:
+- QR Display (Pantalla QR) and Check-in (Marcar Asistencia) now render as full-screen views without sidebar/header
+- Both views have back navigation buttons to return to dashboard
+- Fixed SSR hydration issue with window.innerWidth in QR display
+- 3 files modified: main-layout.tsx, qr-display-view.tsx, check-in-view.tsx
