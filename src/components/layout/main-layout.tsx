@@ -12,6 +12,8 @@ import { PositionsView } from '@/components/views/positions-view'
 import { ShiftsView } from '@/components/views/shifts-view'
 import { AttendanceView } from '@/components/views/attendance-view'
 import { AttendanceMonitorView } from '@/components/views/attendance-monitor-view'
+import { QRDisplayView } from '@/components/views/qr-display-view'
+import { CheckInView } from '@/components/views/check-in-view'
 import { IncidentsView } from '@/components/views/incidents-view'
 import { ContractsView } from '@/components/views/contracts-view'
 import { VacanciesView } from '@/components/views/vacancies-view'
@@ -30,6 +32,8 @@ const views: Record<string, React.ComponentType<any>> = {
   shifts: ShiftsView,
   attendance: AttendanceView,
   'attendance-monitor': AttendanceMonitorView,
+  'qr-display': QRDisplayView,
+  'check-in': CheckInView,
   incidents: IncidentsView,
   contracts: ContractsView,
   vacancies: VacanciesView,

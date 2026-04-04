@@ -11,6 +11,8 @@ export type ViewType =
   | 'shifts'
   | 'attendance'
   | 'attendance-monitor'
+  | 'qr-display'
+  | 'check-in'
   | 'incidents'
   | 'contracts'
   | 'vacancies'

@@ -425,3 +425,170 @@ Work Log:
 Stage Summary:
 - Employee editing now works correctly: all fields editable, Select components handle empty values, deactivated items visible in dropdowns
 - 3 files modified: employees-view.tsx, api/employees/[id]/route.ts, api/employees/route.ts
+
+---
+## Task ID: 2-qr - fullstack-developer
+### Work Task
+Build the check-in/check-out API endpoint for employee attendance via QR code scanning in the SIGA-RH HR management platform.
+
+### Work Summary
+Created 1 file:
+
+**Check-in API (`src/app/api/attendance/checkin/route.ts`):**
+- POST endpoint at `/api/attendance/checkin` for employee attendance registration via QR code
+- JWT authentication using `jose` library (Bearer token, `JWT_SECRET` env var with fallback)
+- Request body validation: qrCodeId, employeeId (required), recordType (check_in/check_out), latitude/longitude/gpsAccuracy (optional), selfieData (base64), deviceInfo, notes
+- QR code validation: checks active=true and expiresAt > now(), returns 400 with "Código QR inválido o expirado" if invalid
+- Employee validation: checks employee exists and active=true, returns 404 if not found
+- Branch geofence lookup: fetches branch from QR code's branchId with latitude/longitude/geofenceRadius
+- Haversine distance calculation for GPS geofence validation: if employee location is outside branch geofence radius, adds `"outside_geofence"` to fraudFlags (allows check-in but flags it)
+- Duplicate detection logic:
+  - check_in: rejects if employee already has a pending check_in (no matching check_out) for this branch today
+  - check_out: rejects if no matching check_in exists, or if check_out already recorded for the latest check_in
+- Shift-based status determination:
+  - Fetches active EmployeeShift (effectiveDate <= today, no end or endDate >= today, ordered by effectiveDate desc)
+  - check_in: `on_time` if within shift tolerance, `late` if after tolerance
+  - check_out: `on_time` if before shift endTime, `early_departure` if more than 30 min before endTime
+- Creates AttendanceRecord with all data (companyId, branchId, employeeId, qrCodeId, recordType, recordTime, scheduledTime, lat/lng/gpsAccuracy, selfieUrl, status, minutesDiff, fraudFlags, deviceInfo, notes)
+- Creates AppNotification (type=attendance, title="Registro de Asistencia", message with employee name, entry/exit label, branch name, and status)
+- Returns created record (201) with employee (firstName, lastName, employeeNumber) and branch (name) included
+- Error handling: try/catch with specific JWT error handling (JWTExpired, JWTInvalid → 401), general 500 error
+- All user-facing messages in Spanish
+
+### Design Patterns
+- Follows existing code style: `db` import from `@/lib/db`, `NextRequest`/`NextResponse` from Next.js
+- JWT auth pattern matches existing verify route convention
+- Prisma queries with relations (include) matching qrcodes route pattern
+- Helper functions: `haversineDistance()` (meters), `timeToMinutes()` (shift time parsing)
+
+### Verification
+- File created at correct path: `src/app/api/attendance/checkin/route.ts`
+- Imports align with project conventions
+- All Prisma model field names match schema.prisma
+
+---
+## Task ID: 4-qr - fullstack-developer
+### Work Task
+Create the employee check-in view — a mobile-first component for scanning QR codes, capturing selfies, obtaining GPS, and submitting attendance records in the SIGA-RH HR management platform.
+
+### Work Summary
+Created 1 file:
+
+**CheckInView (`src/components/views/check-in-view.tsx`):**
+- Mobile-first design (max-w-md centered layout) optimized for phone usage
+- Exported as `CheckInView`
+- `'use client'` directive, emerald color theme, all text in Spanish
+
+**Header:**
+- Title: "Marcar Asistencia" with current date in Spanish (e.g., "Sábado, 5 de abril de 2026")
+- Uses `formatDateES()` helper with full Spanish day/month names
+
+**Employee Selection Card:**
+- Persistent card at top (visible on all steps except success)
+- Select dropdown to choose employee from `/api/employees?limit=500&status=active`
+- Shows employee name + number in dropdown items
+- User icon with emerald background
+
+**State Machine Flow:** `IDLE → SCANNING → VERIFIED → SELFIE → GPS → CONFIRM → SUCCESS`
+- Each step renders different UI with back navigation support
+- `handleBack()` navigates to the previous step with proper cleanup
+
+**Step: IDLE**
+- Large "Escanear Código QR" button with QrCode icon (emerald-600)
+- Manual input section: "O ingresa el código manualmente:" with monospace input + "Verificar" button
+- Info card with camera icon and usage tips
+- Enter key triggers manual verification
+
+**Step: SCANNING**
+- Uses `Html5Qrcode` from `html5-qrcode` library (v2.3.8, already installed)
+- Back camera (`facingMode: 'environment'`), 10 FPS, 250x250 QR box
+- Animated "Escaneando..." badge with pulse effect
+- Proper scanner cleanup on cancel and unmount (checks scanner state before stopping)
+- Error handling for camera permission denial
+
+**Step: VERIFIED**
+- Green "QR Verificado ✓" card with branch name
+- Checks `/api/attendance/qrcodes` to validate scanned code (matches by id or code field)
+- Falls back gracefully if API unavailable (offline-friendly)
+- Record type selection: two large buttons — "🟢 Entrada" (emerald) and "🔴 Salida" (red)
+- Auto-detects pending check_in today: if found, shows amber warning banner and auto-selects "Salida"
+- "Continuar — Tomar Foto" button
+
+**Step: SELFIE**
+- Front camera (`facingMode: 'user'`, 640x480) via `navigator.mediaDevices.getUserMedia`
+- Mirrored video display (scaleX(-1)) with circular face guide overlay
+- "Capturar Foto" button captures frame to hidden canvas
+- Canvas mirrors image for natural selfie orientation, exports as JPEG (0.8 quality)
+- Preview of captured photo with "Tomar otra" / "Continuar" buttons
+- Proper stream cleanup on back navigation
+
+**Step: GPS**
+- Brief loading screen with spinning MapPin icon
+- `navigator.geolocation.getCurrentPosition` with high accuracy, 15s timeout
+- Spanish error messages for: permission denied, unavailable, timeout
+- GPS failure still allows check-in (warning shown on confirm step)
+
+**Step: CONFIRM**
+- Summary card showing all collected data:
+  - Branch name (QrCode icon, emerald)
+  - Record type with colored indicator (emerald for Entrada, red for Salida)
+  - Selfie thumbnail (circular, with "✓ Capturada" badge) — only if selfie was taken
+  - GPS coordinates (monospace, with accuracy in meters) — green if obtained, amber warning if not
+  - Current time (from Date)
+- Large "Confirmar Asistencia" button (emerald-600, disabled during submit)
+- POSTs to `/api/attendance/checkin` with: qrCodeId, employeeId, recordType, latitude, longitude, gpsAccuracy, selfieData (base64), deviceInfo (userAgent), notes (GPS error if any)
+- Bearer token auth via `Authorization: Bearer ${localStorage.getItem('siga_token')}`
+
+**Step: SUCCESS**
+- Animated checkmark with ping effect (scale-in animation + border ping)
+- "¡Asistencia Registrada!" heading in emerald
+- Detail card: time, branch, type (Entrada/Salida badge), status (A Tiempo/Retardo badge)
+- "Volver a Escanear" button resets all state
+
+**Error Handling:**
+- Toast notifications via sonner for: camera permission denied, QR invalid/expired, GPS errors, submit failures
+- try/catch on all async operations with user-friendly Spanish messages
+- Scanner state checking (getState() === 2) before stopping to avoid errors
+
+**Cleanup:**
+- useEffect cleanup stops QR scanner and selfie camera stream on unmount
+- `stopSelfieStream()` helper stops all tracks
+- `stopScanner()` checks scanner state and clears UI
+
+**shadcn/ui components used:** Card, Button, Badge, Separator, Input, Label, Select, Skeleton
+**Lucide icons used:** Camera, QrCode, MapPin, Clock, CheckCircle2, XCircle, ArrowLeft, RefreshCw, User, Smartphone
+
+### Verification
+- ESLint passes with zero errors
+- File created at `src/components/views/check-in-view.tsx` (480 lines)
+- Follows project patterns: 'use client', emerald theme, Spanish text, Bearer token auth, sonner toasts
+
+---
+## Task ID: 3-qr - fullstack-developer
+### Work Task
+Create the QR Display admin view for the SIGA-RH HR platform — a full-screen display for office TV/monitors showing a QR code employees can scan to check in.
+
+### Work Summary
+Created 1 file, installed 1 package:
+
+**Package installed:**
+- `qrcode.react@^4.2.0` — for rendering QR codes as SVG in React
+
+**QRDisplayView (`src/components/views/qr-display-view.tsx`):**
+- Full-screen display layout with `min-h-screen flex-col`, emerald gradient background, dark mode support
+- **Header bar** (slim, backdrop-blur): company name from Zustand store (`companyName`, default "SIGA-RH") with Monitor icon on the left; live clock (HH:mm:ss, America/Caracas timezone, `setInterval` every 1s) on the right; "Pantalla Completa" button calling `document.documentElement.requestFullscreen()` / `exitFullscreen()`
+- **Branch selector toolbar**: Select dropdown fetching branches from `/api/branches` with Bearer auth; auto-selects first branch if only one exists; "Generar QR" button (emerald-600) with loading spinner state; "QR expira en:" countdown label with color-coded timer (emerald when active, red when expired)
+- **Main QR display area** (centered, `flex-1`): three states — no branch selected (MapPin icon + instructions), no active QR (QrCode icon + "No hay QR activo. Genera uno nuevo." + generate button), active QR display (status badge with pulsing green dot / red expired dot, QR code rendered via `QRCodeSVG` from qrcode.react with value=`code` UUID, emerald foreground, level="H", 280px mobile / 400px desktop; below QR: branch name in large text, "Escanea para marcar asistencia" muted text, Spanish date like "Sábado, 5 de abril de 2026")
+- **Auto-refresh logic**: fetches active QR from `GET /api/attendance/qrcodes?branchId={id}` on branch selection; auto-generates new QR via `POST /api/attendance/qrcodes` when current QR expires (24h timeout); countdown timer recalculates every second via `currentTime` state
+- **Bottom info bar** (sticky footer): left = "Sucursal: {name}", center = QR status with colored dot, right = "SIGA-RH © {year}"
+- **State management**: branches, selectedBranch, currentQR (id/code/expiresAt/branch), loading, currentTime, isFullscreen
+- **Auth helper**: `authHeaders()` returns Bearer token from `localStorage siga_token`
+- **Helper functions**: `formatSpanishDate()` (long Spanish date), `formatTimeCaracas()` (HH:mm:ss in America/Caracas), `timeRemainingMs()`, `formatCountdown()` (HH:mm:ss from ms)
+- All text in Spanish, emerald color theme, responsive design
+- shadcn/ui components: Card, Select, Button, Badge
+- Lucide icons: QrCode, Monitor, Clock, RefreshCw, Maximize, Minimize, MapPin
+
+### Verification
+- ESLint: 0 errors, 0 warnings
+- TypeScript compiles correctly
+- Follows project patterns: 'use client', auth headers, sonner toasts, responsive classes

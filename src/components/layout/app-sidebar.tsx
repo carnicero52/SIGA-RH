@@ -4,7 +4,7 @@ import { useAppStore, type ViewType } from '@/store/app-store'
 import {
   LayoutDashboard, Users, Building2, GitBranch, Briefcase,
   Clock, QrCode, ShieldAlert, FileText, Search, BarChart3,
-  Settings, ChevronDown, LogOut, Bell, Menu
+  Settings, ChevronDown, LogOut, Bell, Menu, Monitor, Smartphone
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
@@ -40,6 +40,8 @@ const navGroups: NavGroup[] = [
     items: [
       { id: 'attendance-monitor', label: 'Monitor en Vivo', icon: <Clock className="h-4 w-4" />, badge: 'LIVE' },
       { id: 'attendance', label: 'Registros', icon: <QrCode className="h-4 w-4" /> },
+      { id: 'qr-display', label: 'Pantalla QR', icon: <Monitor className="h-4 w-4" /> },
+      { id: 'check-in', label: 'Marcar Asistencia', icon: <Smartphone className="h-4 w-4" /> },
       { id: 'shifts', label: 'Turnos', icon: <Briefcase className="h-4 w-4" /> },
     ],
   },
@@ -208,6 +210,8 @@ export function AppHeader() {
     vacancies: 'Vacantes',
     candidates: 'Candidatos',
     reports: 'Reportes',
+    'qr-display': 'Pantalla QR',
+    'check-in': 'Marcar Asistencia',
     company: 'Configuración',
     settings: 'Configuración',
   }
