@@ -7,33 +7,20 @@ import { useAppStore } from '@/store/app-store'
 export default function Home() {
   const navigate = useAppStore((s) => s.navigate)
   const isAuthenticated = useAppStore((s) => s.isAuthenticated)
-  const login = useAppStore((s) => s.login)
 
+  // ── Detect QR scan from URL ──────────────────────────────────────────
+  // When someone scans a QR code, the URL is /?qr=CODE
+  // ALWAYS navigate to check-in (no login required for employees)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const qrCode = params.get('qr')
     if (qrCode) {
-      // Store QR code in sessionStorage for after login
-      sessionStorage.setItem('pending_qr', qrCode)
-      // Clean URL
+      // Clean the URL
       window.history.replaceState({}, '', '/')
-      // If authenticated, go to check-in with the QR code
-      if (isAuthenticated) {
-        navigate('check-in', { qr: qrCode })
-      }
-      // If not authenticated, the user will need to login first
-      // After login, check for pending_qr in sessionStorage
+      // Navigate directly to public check-in
+      navigate('check-in', { qr: qrCode })
     }
   }, [])
-
-  // Watch for auth changes (when user logs in after scanning QR)
-  useEffect(() => {
-    const pendingQr = sessionStorage.getItem('pending_qr')
-    if (pendingQr && isAuthenticated) {
-      sessionStorage.removeItem('pending_qr')
-      navigate('check-in', { qr: pendingQr })
-    }
-  }, [isAuthenticated])
 
   return <MainLayout />
 }

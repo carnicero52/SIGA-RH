@@ -79,6 +79,7 @@ export function CheckInView() {
   const [scannedCode, setScannedCode] = useState('')
   const [manualCode, setManualCode] = useState('')
   const [branchName, setBranchName] = useState('')
+  const [loadingQr, setLoadingQr] = useState(false)
 
   // Selfie
   const [selfieData, setSelfieData] = useState<string>('')
@@ -102,27 +103,34 @@ export function CheckInView() {
   const selfieCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const selfieStreamRef = useRef<MediaStream | null>(null)
 
-  // ── Fetch employees ─────────────────────────────────────────────────────────
-
-  const fetchEmployees = useCallback(async () => {
+  // ── Fetch employees (called after QR verification via public API) ──────
+  const fetchEmployees = useCallback(async (companyId?: string) => {
+    setLoadingEmployees(true)
     try {
-      const res = await fetch('/api/employees?limit=500&status=active', {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
-      if (!res.ok) return
+      // Use public API if no auth token, otherwise use authenticated API
+      const token = getToken()
+      let res: Response
+      if (token) {
+        res = await fetch('/api/employees?limit=500&status=active', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      } else {
+        res = await fetch('/api/employees?limit=500&status=active')
+      }
+      if (!res.ok) {
+        // If no auth, employees will be loaded via public-qrcode response
+        if (!token) return
+        return
+      }
       const data = await res.json()
       const list: Employee[] = Array.isArray(data) ? data : data.employees || []
       setEmployees(list)
     } catch {
-      toast.error('Error al cargar empleados')
+      // silent — employees will come from QR verification
     } finally {
       setLoadingEmployees(false)
     }
   }, [])
-
-  useEffect(() => {
-    fetchEmployees()
-  }, [fetchEmployees])
 
   // ── Auto-verify QR from URL params ─────────────────────────────────────────
   const viewParams = useAppStore((s) => s.viewParams)
@@ -203,36 +211,39 @@ export function CheckInView() {
   }
 
   const verifyQrCode = async (code: string) => {
+    setLoadingQr(true)
     try {
-      const res = await fetch('/api/attendance/qrcodes', {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
-      if (!res.ok) {
-        toast.error('Error al verificar código QR')
-        setStep('idle')
-        return
-      }
+      // Use PUBLIC QR verification API (no auth needed)
+      const res = await fetch(`/api/attendance/public-qrcode?qrcode=${encodeURIComponent(code)}`)
       const data = await res.json()
-      const codes = Array.isArray(data) ? data : data.qrCodes || []
-      const found = codes.find((c: any) => c.id === code || c.code === code)
-      if (!found) {
-        toast.error('Código QR no válido o expirado')
+
+      if (!data.valid) {
+        toast.error(data.error || 'Código QR no válido o expirado')
         setStep('idle')
+ setLoadingQr(false)
         return
       }
-      setBranchName(found.branch?.name || 'Sucursal desconocida')
-      setScannedCode(found.id)
+
+      // Set branch info
+      setBranchName(data.branchName || 'Sucursal')
+      setScannedCode(data.qrId)
+
+      // Load employees from the public API response
+      if (data.employees && data.employees.length > 0) {
+        setEmployees(data.employees as Employee[])
+        setLoadingEmployees(false)
+ }
+
       toast.success('QR Verificado ✓')
       setStep('verified')
+      setLoadingQr(false)
 
       // Check for pending check_in today
-      checkPendingCheckIn()
+      if (selectedEmployeeId) checkPendingCheckIn()
     } catch {
-      // Even if verification fails, allow proceeding (offline-friendly)
-      setBranchName('Sucursal')
-      toast.success('Código QR capturado')
-      setStep('verified')
-      checkPendingCheckIn()
+      toast.error('Error al verificar código QR')
+      setStep('idle')
+      setLoadingQr(false)
     }
   }
 
@@ -416,9 +427,10 @@ export function CheckInView() {
         notes: gpsError ? `GPS: ${gpsError}` : null,
       }
 
-      const res = await fetch('/api/attendance/checkin', {
+      // Use PUBLIC checkin API (no auth needed for QR-based attendance)
+      const res = await fetch('/api/attendance/public-checkin', {
         method: 'POST',
-        headers: authHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
@@ -496,7 +508,7 @@ export function CheckInView() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('dashboard')}
+          onClick={() => navigate('landing')}
           className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -508,8 +520,21 @@ export function CheckInView() {
         <div className="w-8" /> {/* Spacer to center the title */}
       </div>
 
+      {/* ── QR Loading ──────────────────────────────────────────────────── */}
+      {loadingQr && (
+        <Card>
+          <CardContent className="p-4 flex flex-col items-center gap-3 py-8">
+            <div className="relative">
+              <div className="h-12 w-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
+              <QrCode className="h-5 w-5 text-emerald-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-sm text-muted-foreground">Verificando código QR...</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Employee Select ────────────────────────────────────────────────── */}
-      {step !== 'success' && (
+      {!loadingQr && step !== 'success' && (
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">

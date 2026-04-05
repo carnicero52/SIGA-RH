@@ -49,6 +49,20 @@ const views: Record<string, React.ComponentType<any>> = {
 export function MainLayout() {
   const { currentView, isAuthenticated } = useAppStore()
 
+  // check-in is always public (employees scan QR without logging in)
+  if (currentView === 'check-in') {
+    const ViewComponent = views['check-in']
+    return ViewComponent ? (
+      <div className="min-h-screen">
+        <ViewComponent />
+      </div>
+    ) : (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Vista no encontrada</p>
+      </div>
+    )
+  }
+
   if (!isAuthenticated) {
     const publicViews = ['landing', 'register', 'login']
     if (publicViews.includes(currentView)) {
