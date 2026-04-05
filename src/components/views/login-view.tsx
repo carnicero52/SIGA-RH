@@ -34,6 +34,14 @@ export function LoginView() {
       login(data.user)
       setCompany(data.user.companyName, data.user.companyLogo)
       toast.success(`Bienvenido, ${data.user.name}`)
+      // Check for pending QR redirect
+      const pendingQr = sessionStorage.getItem('pending_qr')
+      if (pendingQr) {
+        sessionStorage.removeItem('pending_qr')
+        navigate('check-in', { qr: pendingQr })
+      } else {
+        navigate('dashboard')
+      }
     } catch {
       toast.error('Error de conexión')
     } finally {

@@ -124,6 +124,16 @@ export function CheckInView() {
     fetchEmployees()
   }, [fetchEmployees])
 
+  // ── Auto-verify QR from URL params ─────────────────────────────────────────
+  const viewParams = useAppStore((s) => s.viewParams)
+
+  useEffect(() => {
+    const qrFromUrl = viewParams?.qr
+    if (qrFromUrl && !scannedCode && step === 'idle') {
+      verifyQrCode(qrFromUrl)
+    }
+  }, [viewParams?.qr])
+
   // ── Cleanup on unmount ──────────────────────────────────────────────────────
 
   useEffect(() => {

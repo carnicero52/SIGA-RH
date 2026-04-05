@@ -624,7 +624,31 @@ Agent: Main Agent
 Task: Configure SIGA-RH to use Neon PostgreSQL database
 
 Work Log:
-- Read and analyzed current setup: SQLite (file:/db/custom.db), Prisma schema with 15 models, seed with 15 employees + 130 attendance records
+- Read and analyzed current setup: SQLite (file:/db/custom.db), Prisma schema with
+---
+Task ID: 1 - fullstack-developer
+Agent: fullstack-developer
+Task: Fix QR scan navigation flow
+
+Work Log:
+- Diagnosed issue: QR codes generated in QR Display view pointed to `/attendance?qrcode=CODE` which is NOT a valid route; the app only has one route `/` with client-side navigation via Zustand store
+- Modified `src/app/page.tsx`: Added `?qr=CODE` query param detection on mount; stores QR code in `sessionStorage` (`pending_qr`) for after-login redirect; cleans URL via `history.replaceState`; if authenticated, immediately navigates to check-in view with QR param; added second `useEffect` watching `isAuthenticated` to handle login-after-scan flow
+- Modified `src/components/views/qr-display-view.tsx` (line 403): Changed QR URL from `/attendance?qrcode=${code}` to `/?qr=${code}` (both client-side origin and relative URL variants)
+- Modified `src/components/views/check-in-view.tsx`: Added `viewParams` from `useAppStore` and a `useEffect` that auto-verifies QR code when `viewParams?.qr` is set, step is 'idle', and no code has been scanned yet
+- Modified `src/components/views/login-view.tsx`: Added pending QR redirect logic after successful login — checks `sessionStorage` for `pending_qr`, if found navigates to check-in view with QR param, otherwise navigates to dashboard
+- Verified: `bun run lint` passes with 0 errors
+
+Stage Summary:
+- QR scan navigation flow now works end-to-end:
+  1. QR Display generates URLs like `https://example.com/?qr=CODE`
+  2. Scanning the QR opens the app on `/` (the only route)
+  3. `page.tsx` detects `?qr=CODE`, stores it in sessionStorage, cleans the URL
+  4. If user is already authenticated → immediately navigates to check-in view with QR pre-filled
+  5. If user is not authenticated → shows login view; after login, redirects to check-in with QR
+  6. Check-in view auto-verifies the QR code from viewParams
+- 4 files modified: page.tsx, qr-display-view.tsx, check-in-view.tsx, login-view.tsx
+- No new routes created — everything stays on `/`
+- ESLint: 0 errors 15 models, seed with 15 employees + 130 attendance records
 - Updated `prisma/schema.prisma`: changed provider from "sqlite" to "postgresql", added directUrl env for migrations
 - Updated `.env`: replaced SQLite URL with Neon PostgreSQL pooler URL and direct URL (removed channel_binding for compatibility)
 - Installed packages: @prisma/adapter-neon, @neondatabase/serverless, ws, @types/ws, dotenv

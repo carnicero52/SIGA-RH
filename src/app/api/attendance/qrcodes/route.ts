@@ -64,7 +64,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || 'https://siga-rh-7oew.vercel.app'
+    const headers = request.headers
+    const protocol = headers.get('x-forwarded-proto') || 'https'
+    const host = headers.get('host') || 'siga-rh-7oew.vercel.app'
+    const baseUrl = `${protocol}://${host}`
     const qrUrl = `${baseUrl}/attendance?qrcode=${qrcode.code}`
 
     return NextResponse.json({ ...qrcode, qrUrl }, { status: 201 })
