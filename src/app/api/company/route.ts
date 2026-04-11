@@ -45,6 +45,24 @@ export async function PUT(request: NextRequest) {
         ...(body.phone !== undefined && { phone: body.phone || null }),
         ...(body.email !== undefined && { email: body.email || null }),
         ...(body.website !== undefined && { website: body.website || null }),
+        // Branding
+        ...(body.slug !== undefined && { slug: body.slug || null }),
+        ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
+        // SMTP
+        ...(body.smtpHost !== undefined && { smtpHost: body.smtpHost || null }),
+        ...(body.smtpPort !== undefined && { smtpPort: body.smtpPort ? Number(body.smtpPort) : null }),
+        ...(body.smtpUser !== undefined && { smtpUser: body.smtpUser || null }),
+        ...(body.smtpPassword !== undefined && { smtpPassword: body.smtpPassword || null }),
+        ...(body.smtpFrom !== undefined && { smtpFrom: body.smtpFrom || null }),
+        ...(body.smtpEnabled !== undefined && { smtpEnabled: Boolean(body.smtpEnabled) }),
+        // Telegram
+        ...(body.telegramBotToken !== undefined && { telegramBotToken: body.telegramBotToken || null }),
+        ...(body.telegramChatId !== undefined && { telegramChatId: body.telegramChatId || null }),
+        ...(body.telegramEnabled !== undefined && { telegramEnabled: Boolean(body.telegramEnabled) }),
+        // Reportes
+        ...(body.dailyReportEnabled !== undefined && { dailyReportEnabled: Boolean(body.dailyReportEnabled) }),
+        ...(body.dailyReportTime !== undefined && { dailyReportTime: body.dailyReportTime }),
+        ...(body.dailyReportRecipients !== undefined && { dailyReportRecipients: body.dailyReportRecipients || null }),
       },
     })
 

@@ -13,20 +13,40 @@ datasource db {
 // COMPANY (Empresa/Tenant)
 // =====================
 model Company {
-  id        String   @id @default(cuid())
-  name      String
-  taxId     String?
-  logo      String?
-  address   String?
-  city      String?
-  state     String?
-  country   String   @default("México")
-  phone     String?
-  email     String?
-  website   String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  slug        String?  @unique
+  taxId       String?
+  logo        String?
+  brandColor  String   @default("#F59E0B")
+  address     String?
+  city        String?
+  state       String?
+  country     String   @default("México")
+  phone       String?
+  email       String?
+  website     String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // === CONFIGURACIÓN SMTP (Gmail) ===
+  smtpHost     String?  @default("smtp.gmail.com")
+  smtpPort     Int?     @default(465)
+  smtpUser     String?
+  smtpPassword String?
+  smtpFrom     String?
+  smtpEnabled  Boolean  @default(false)
+
+  // === CONFIGURACIÓN TELEGRAM ===
+  telegramBotToken String?
+  telegramChatId   String?
+  telegramEnabled  Boolean @default(false)
+
+  // === CONFIGURACIÓN REPORTES ===
+  dailyReportEnabled     Boolean @default(false)
+  dailyReportTime        String  @default("09:00")
+  dailyReportRecipients  String?
 
   branches          Branch[]
   departments       Department[]
