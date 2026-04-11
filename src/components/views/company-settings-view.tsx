@@ -9,7 +9,12 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Building2, Mail, MessageSquare, Bell, Send, TestTube, Save } from 'lucide-react'
 import { toast } from 'sonner'
-import { useAppStore } from '@/lib/store'
+function authHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('siga_token') : ''}`,
+  }
+}
 
 interface CompanySettings {
   id: string
@@ -31,7 +36,6 @@ interface CompanySettings {
 }
 
 export function CompanySettingsView() {
-  const { token } = useAppStore()
   const [settings, setSettings] = useState<CompanySettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -44,7 +48,7 @@ export function CompanySettingsView() {
   async function fetchSettings() {
     try {
       const res = await fetch('/api/company', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       })
       const data = await res.json()
       setSettings(data)
@@ -61,10 +65,7 @@ export function CompanySettingsView() {
     try {
       const res = await fetch('/api/company', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: authHeaders(),
         body: JSON.stringify(settings),
       })
       if (res.ok) {
@@ -84,7 +85,7 @@ export function CompanySettingsView() {
     try {
       const res = await fetch('/api/company/test-email', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       })
       const data = await res.json()
       if (data.success) {
@@ -104,7 +105,7 @@ export function CompanySettingsView() {
     try {
       const res = await fetch('/api/company/test-telegram', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       })
       const data = await res.json()
       if (data.success) {

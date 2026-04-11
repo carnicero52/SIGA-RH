@@ -22,6 +22,7 @@ export type ViewType =
   | 'reports'
   | 'company'
   | 'settings'
+  | 'company-settings'
 
 interface User {
   id: string

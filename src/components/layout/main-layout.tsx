@@ -22,6 +22,7 @@ import { VacanciesView } from '@/components/views/vacancies-view'
 import { CandidatesView } from '@/components/views/candidates-view'
 import { ReportsView } from '@/components/views/reports-view'
 import { CompanyView } from '@/components/views/company-view'
+import { CompanySettingsView } from '@/components/views/company-settings-view'
 
 const views: Record<string, React.ComponentType<any>> = {
   landing: LandingView,
@@ -44,6 +45,7 @@ const views: Record<string, React.ComponentType<any>> = {
   candidates: CandidatesView,
   reports: ReportsView,
   company: CompanyView,
+  'company-settings': CompanySettingsView,
 }
 
 export function MainLayout() {

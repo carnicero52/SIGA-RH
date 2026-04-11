@@ -69,6 +69,12 @@ const navGroups: NavGroup[] = [
       { id: 'reports', label: 'Reportes', icon: <BarChart3 className="h-4 w-4" /> },
     ],
   },
+  {
+    title: 'SISTEMA',
+    items: [
+      { id: 'company-settings', label: 'Configuración', icon: <Settings className="h-4 w-4" /> },
+    ],
+  },
 ]
 
 export function AppSidebar() {
@@ -175,7 +181,7 @@ export function AppSidebar() {
             <DropdownMenuContent side="top" align="start" className="w-56">
               <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('company')}>
+              <DropdownMenuItem onClick={() => navigate('company-settings')}>
                 <Settings className="mr-2 h-4 w-4" /> Configuración
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -214,6 +220,7 @@ export function AppHeader() {
     'check-in': 'Marcar Asistencia',
     company: 'Configuración',
     settings: 'Configuración',
+    'company-settings': 'Configuración del Sistema',
   }
 
   useEffect(() => {
