@@ -17,8 +17,18 @@ export default function Home() {
     if (qrCode) {
       // Clean the URL
       window.history.replaceState({}, '', '/')
+      // Store in sessionStorage so refresh doesn't lose the QR
+      sessionStorage.setItem('pending_qr', qrCode)
       // Navigate directly to public check-in
       navigate('check-in', { qr: qrCode })
+      return
+    }
+
+    // On refresh, if we were on check-in keep it there (don't fall to landing)
+    const store = useAppStore.getState()
+    if (store.currentView === 'check-in') {
+      const pendingQr = sessionStorage.getItem('pending_qr')
+      navigate('check-in', pendingQr ? { qr: pendingQr } : {})
     }
   }, [])
 

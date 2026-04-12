@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export type ViewType =
   | 'landing'
@@ -55,25 +56,43 @@ interface AppState {
   setCompany: (name: string, logo?: string) => void
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  // Auth
-  user: null,
-  isAuthenticated: false,
-  login: (user) => set({ user, isAuthenticated: true, currentView: 'dashboard' }),
-  logout: () => set({ user: null, isAuthenticated: false, currentView: 'landing' }),
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      // Auth
+      user: null,
+      isAuthenticated: false,
+      login: (user) => set({ user, isAuthenticated: true, currentView: 'dashboard' }),
+      logout: () => {
+        localStorage.removeItem('siga_token')
+        set({ user: null, isAuthenticated: false, currentView: 'landing' })
+      },
 
-  // Navigation
-  currentView: 'landing' as ViewType,
-  viewParams: {},
-  navigate: (view, params = {}) => set({ currentView: view, viewParams: params }),
+      // Navigation
+      currentView: 'landing' as ViewType,
+      viewParams: {},
+      navigate: (view, params = {}) => set({ currentView: view, viewParams: params }),
 
-  // UI
-  sidebarOpen: true,
-  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      // UI
+      sidebarOpen: true,
+      toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
-  // Company
-  companyName: 'SIGA-RH',
-  companyLogo: '',
-  setCompany: (name, logo = '') => set({ companyName: name, companyLogo: logo }),
-}))
+      // Company
+      companyName: 'SIGA-RH',
+      companyLogo: '',
+      setCompany: (name, logo = '') => set({ companyName: name, companyLogo: logo }),
+    }),
+    {
+      name: 'siga-rh-store',
+      // Only persist auth and company info — not transient UI state
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+        companyName: state.companyName,
+        companyLogo: state.companyLogo,
+        currentView: state.currentView,
+      }),
+    }
+  )
+)

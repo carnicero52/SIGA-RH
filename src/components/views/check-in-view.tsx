@@ -508,7 +508,14 @@ export function CheckInView() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('landing')}
+          onClick={() => {
+            const isAuth = useAppStore.getState().isAuthenticated
+            if (step !== 'idle') {
+              handleBack()
+            } else {
+              navigate(isAuth ? 'dashboard' : 'landing')
+            }
+          }}
           className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />

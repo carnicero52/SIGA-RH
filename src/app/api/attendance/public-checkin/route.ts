@@ -87,7 +87,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Geofence check
+    // 4. Validate employee belongs to this branch
+    if (employee.branchId && employee.branchId !== branch.id) {
+      return NextResponse.json(
+        { error: 'Este empleado no pertenece a la sucursal de este código QR' },
+        { status: 403 }
+      )
+    }
+
+    // 5. Geofence check
     const fraudFlags: string[] = []
 
     if (latitude != null && longitude != null) {
