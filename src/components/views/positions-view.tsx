@@ -41,6 +41,7 @@ import {
 import { toast } from 'sonner'
 import { useAppStore } from '@/store/app-store'
 import type { Position, Department } from '@/lib/types'
+import { CURRENCIES, POSITION_LEVELS, formatCurrency } from '@/lib/currencies'
 
 // Helper: auth headers
 function authHeaders() {
@@ -48,16 +49,6 @@ function authHeaders() {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${localStorage.getItem('siga_token')}`,
   }
-}
-
-// Format salary as currency
-function formatSalary(amount: number | null | undefined): string {
-  if (amount == null) return '-'
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-  }).format(amount)
 }
 
 // Status badge
@@ -83,9 +74,9 @@ function EmptyState() {
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 mb-4">
         <Briefcase className="h-8 w-8 text-emerald-600" />
       </div>
-      <h3 className="text-lg font-semibold mb-1">Sin Puestos</h3>
+      <h3 className="text-lg font-semibold mb-1">Sin Cargos Registrados</h3>
       <p className="text-sm text-muted-foreground text-center max-w-sm">
-        No hay puestos registrados. Crea tu primer puesto para definir los roles de tu empresa.
+        No hay cargos registrados. Crea tu primer cargo para definir los niveles y roles de tu empresa.
       </p>
     </div>
   )
@@ -120,6 +111,8 @@ interface PosFormData {
   name: string
   description: string
   salary: string
+  currency: string
+  level: string
 }
 
 const defaultFormData: PosFormData = {
@@ -127,6 +120,8 @@ const defaultFormData: PosFormData = {
   name: '',
   description: '',
   salary: '',
+  currency: 'USD',
+  level: '',
 }
 
 export function PositionsView() {
@@ -202,6 +197,8 @@ export function PositionsView() {
       name: pos.name,
       description: pos.description || '',
       salary: pos.salary != null ? String(pos.salary) : '',
+      currency: (pos as any).currency || 'USD',
+      level: (pos as any).level || '',
     })
     setDialogOpen(true)
   }
@@ -224,6 +221,8 @@ export function PositionsView() {
         name: formData.name,
         description: formData.description || null,
         salary: formData.salary ? Number(formData.salary) : null,
+        currency: formData.currency || 'USD',
+        level: formData.level || null,
       }
 
       if (editingPos) {
@@ -350,9 +349,9 @@ export function PositionsView() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                    <TableHead>Puesto</TableHead>
+                    <TableHead>Cargo</TableHead>
+                    <TableHead>Nivel</TableHead>
                     <TableHead>Departamento</TableHead>
-                    <TableHead>Descripción</TableHead>
                     <TableHead>Salario</TableHead>
                     <TableHead className="text-center">Empleados</TableHead>
                     <TableHead>Estado</TableHead>
@@ -362,7 +361,19 @@ export function PositionsView() {
                 <TableBody>
                   {filteredPositions.map((pos) => (
                     <TableRow key={pos.id} className="hover:bg-muted/20">
-                      <TableCell className="font-medium">{pos.name}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{pos.name}</p>
+                          {pos.description && <p className="text-xs text-muted-foreground truncate max-w-[180px]">{pos.description}</p>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {(pos as any).level ? (
+                          <Badge variant="outline" className="text-xs border-amber-300 text-amber-700 bg-amber-50">
+                            {POSITION_LEVELS.find(l => l.value === (pos as any).level)?.label || (pos as any).level}
+                          </Badge>
+                        ) : <span className="text-muted-foreground text-xs">-</span>}
+                      </TableCell>
                       <TableCell>
                         {pos.department && (
                           <Badge variant="outline" className="border-teal-300 text-teal-700 bg-teal-50 text-xs">
@@ -370,11 +381,8 @@ export function PositionsView() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                        {pos.description || '-'}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {formatSalary(pos.salary)}
+                      <TableCell className="font-mono text-sm text-emerald-700 font-semibold">
+                        {formatCurrency(pos.salary, (pos as any).currency || 'USD')}
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="inline-flex items-center gap-1.5">
@@ -440,7 +448,7 @@ export function PositionsView() {
                     <p className="text-sm text-muted-foreground line-clamp-2">{pos.description}</p>
                   )}
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="font-mono font-medium text-emerald-700">{formatSalary(pos.salary)}</span>
+                    <span className="font-mono font-medium text-emerald-700">{formatCurrency(pos.salary, (pos as any).currency || 'USD')}</span>
                     <span className="text-muted-foreground flex items-center gap-1">
                       <Users className="h-3.5 w-3.5" />
                       {pos._count?.employees ?? 0} empleados
@@ -458,7 +466,7 @@ export function PositionsView() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingPos ? 'Editar Puesto' : 'Nuevo Puesto'}
+              {editingPos ? 'Editar Cargo' : 'Nuevo Cargo'}
             </DialogTitle>
           </DialogHeader>
 
@@ -504,16 +512,44 @@ export function PositionsView() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="pos-salary">Salario Mensual (MXN)</Label>
-              <Input
-                id="pos-salary"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="25000.00"
-                value={formData.salary}
-                onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-              />
+              <Label>Nivel Jerárquico</Label>
+              <Select value={formData.level || 'none'} onValueChange={(v) => setFormData({ ...formData, level: v === 'none' ? '' : v })}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar nivel" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin nivel específico</SelectItem>
+                  {POSITION_LEVELS.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="pos-salary">Salario Mensual</Label>
+                <Input
+                  id="pos-salary"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="1500.00"
+                  value={formData.salary}
+                  onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Moneda</Label>
+                <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {CURRENCIES.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>
+                        <span className="font-mono font-semibold">{c.code}</span> · {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 

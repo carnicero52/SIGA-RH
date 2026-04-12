@@ -31,6 +31,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { Vacant, Department, Position } from '@/lib/types'
 import { vacantStatusLabels, employmentTypeLabels } from '@/lib/types'
+import { CURRENCIES, formatCurrency } from '@/lib/currencies'
 
 const statusColors: Record<string, string> = {
   open: 'border-emerald-500/50 text-emerald-600 bg-emerald-50',
@@ -52,6 +53,7 @@ const defaultForm = {
   requirements: '',
   salaryMin: '',
   salaryMax: '',
+  currency: 'USD',
   employmentType: 'full_time',
   location: '',
   vacanciesCount: '1',
@@ -311,8 +313,9 @@ export function VacanciesView() {
                   {(vacant.salaryMin || vacant.salaryMax) && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <DollarSign className="h-3.5 w-3.5" />
-                      <span>
-                        ${Number(vacant.salaryMin || 0).toLocaleString('es-MX')} - ${Number(vacant.salaryMax || 0).toLocaleString('es-MX')}
+                      <span className="font-medium text-emerald-700">
+                        {formatCurrency(vacant.salaryMin, (vacant as any).currency || 'USD')}
+                        {vacant.salaryMax ? ` — ${formatCurrency(vacant.salaryMax, (vacant as any).currency || 'USD')}` : '+'}
                       </span>
                     </div>
                   )}
@@ -423,6 +426,19 @@ export function VacanciesView() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label>Moneda</Label>
+              <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {CURRENCIES.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      <span className="font-mono font-semibold">{c.code}</span> · {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="v-salmin">Salario Mínimo</Label>

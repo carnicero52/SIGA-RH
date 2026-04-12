@@ -46,6 +46,8 @@ export async function PUT(
         ...(name !== undefined && { name }),
         ...(description !== undefined && { description: description || null }),
         ...(salary !== undefined && { salary: salary != null ? Number(salary) : null }),
+        ...(body.currency !== undefined && { currency: body.currency }),
+        ...(body.level !== undefined && { level: body.level || null }),
       },
       include: {
         department: {

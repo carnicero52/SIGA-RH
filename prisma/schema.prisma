@@ -120,6 +120,8 @@ model Position {
   name         String
   description  String?
   salary       Float?
+  currency     String   @default("USD")
+  level        String?  // Nivel jerárquico: junior, mid, senior, lead, manager, director, executive
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -356,6 +358,7 @@ model Vacant {
   requirements   String?
   salaryMin      Float?
   salaryMax      Float?
+  currency       String   @default("USD")
   employmentType String   @default("full_time")
   location       String?
   status         String   @default("open")

@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         salary: salary != null ? Number(salary) : null,
+        currency: body.currency || 'USD',
+        level: body.level || null,
       },
       include: {
         department: {

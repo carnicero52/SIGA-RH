@@ -52,7 +52,7 @@ const navGroups: NavGroup[] = [
     items: [
       { id: 'employees', label: 'Empleados', icon: <Users className="h-4 w-4" /> },
       { id: 'departments', label: 'Departamentos', icon: <GitBranch className="h-4 w-4" /> },
-      { id: 'positions', label: 'Puestos', icon: <Briefcase className="h-4 w-4" /> },
+      { id: 'positions', label: 'Cargos y Niveles', icon: <Briefcase className="h-4 w-4" /> },
       { id: 'branches', label: 'Sucursales', icon: <Building2 className="h-4 w-4" /> },
     ],
   },
@@ -210,7 +210,7 @@ export function AppHeader() {
     'employee-detail': 'Detalle de Empleado',
     branches: 'Sucursales',
     departments: 'Departamentos',
-    positions: 'Puestos',
+    positions: 'Cargos y Niveles',
     shifts: 'Turnos',
     attendance: 'Registros de Asistencia',
     'attendance-monitor': 'Monitor de Asistencia en Vivo',
