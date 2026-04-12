@@ -3,6 +3,10 @@ import { getCountryConfig, type CountryConfig } from '@/lib/country-fields'
 
 let cachedCountry: string | null = null
 
+export function clearCountryCache() {
+  cachedCountry = null
+}
+
 export function useCompanyCountry(): { country: string; config: CountryConfig } {
   const [country, setCountry] = useState<string>(cachedCountry || 'Venezuela')
 

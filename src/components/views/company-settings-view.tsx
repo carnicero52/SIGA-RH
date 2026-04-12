@@ -14,8 +14,11 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   Building2, Mail, MessageSquare, Bell, Send, TestTube, Save,
-  Trash2, AlertTriangle, Image as ImageIcon,
+  Trash2, AlertTriangle, Image as ImageIcon, Globe,
 } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { COUNTRY_LIST } from '@/lib/country-fields'
+import { clearCountryCache } from '@/hooks/useCompanyCountry'
 import { toast } from 'sonner'
 
 function authHeaders() {
@@ -31,6 +34,7 @@ interface CompanySettings {
   slogan: string | null
   brandColor: string
   logo: string | null
+  country: string
   smtpHost: string | null
   smtpPort: number | null
   smtpUser: string | null
@@ -84,6 +88,7 @@ export function CompanySettingsView() {
         body: JSON.stringify(settings),
       })
       if (res.ok) {
+        clearCountryCache() // refresh country-specific fields in other views
         toast.success(`${section} guardado correctamente`)
       } else {
         const err = await res.json()
@@ -216,6 +221,28 @@ export function CompanySettingsView() {
                   Pega la URL directa de la imagen. También puedes usar servicios como{' '}
                   <a href="https://imgur.com" target="_blank" rel="noreferrer" className="underline">imgur.com</a>{' '}
                   para subir tu logo y obtener la URL.
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2">
+                  <Globe className="w-4 h-4" /> País de operación
+                </Label>
+                <Select
+                  value={settings.country || 'Venezuela'}
+                  onValueChange={(v) => setSettings({ ...settings, country: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un país" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {COUNTRY_LIST.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Define qué documentos de identidad se solicitan a los empleados (Cédula, RIF, IVSS, etc.)
                 </p>
               </div>
 
