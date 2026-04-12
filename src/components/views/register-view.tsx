@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Eye, EyeOff, Loader2, ArrowLeft, Building2, UserCircle } from 'lucide-react'
+import { Eye, EyeOff, Loader2, ArrowLeft, Building2, UserCircle, Globe, Check } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { COUNTRY_LIST } from '@/lib/country-fields'
 import { toast } from 'sonner'
 
 export function RegisterView() {
@@ -27,6 +29,10 @@ export function RegisterView() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // Country & plan
+  const [country, setCountry] = useState('Venezuela')
+  const [plan] = useState('free')
 
   // Terms
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -98,6 +104,8 @@ export function RegisterView() {
           adminName: adminName.trim(),
           adminEmail: adminEmail.trim(),
           password,
+          country,
+          plan,
         }),
       })
       const data = await res.json()
@@ -196,6 +204,22 @@ export function RegisterView() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Country selector */}
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> País de operación *</Label>
+                <Select value={country} onValueChange={setCountry}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona tu país" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {COUNTRY_LIST.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Define los documentos de identidad y zona horaria de tu empresa.</p>
               </div>
 
               <Separator />

@@ -5,7 +5,7 @@ import { hash } from 'bcryptjs'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { companyName, taxId, companyEmail, companyPhone, adminName, adminEmail, password } = body
+    const { companyName, taxId, companyEmail, companyPhone, adminName, adminEmail, password, country, plan } = body
 
     // Validation
     const errors: string[] = []
@@ -35,6 +35,31 @@ export async function POST(request: NextRequest) {
 
     // Create company + user + branch + departments in a transaction
     const result = await db.$transaction(async (tx) => {
+      // Resolve country coords
+      const countryCoords: Record<string, [number, number]> = {
+        'Venezuela': [10.4806, -66.9036],
+        'Colombia': [4.7110, -74.0721],
+        'México': [19.4326, -99.1332],
+        'Perú': [-12.0464, -77.0428],
+        'Ecuador': [-0.1807, -78.4678],
+        'Argentina': [-34.6037, -58.3816],
+        'Chile': [-33.4489, -70.6693],
+        'República Dominicana': [18.4861, -69.9312],
+      }
+      const coords = countryCoords[country] || countryCoords['Venezuela']
+
+      // Resolve timezone
+      const countryTz: Record<string, string> = {
+        'Venezuela': 'America/Caracas',
+        'Colombia': 'America/Bogota',
+        'México': 'America/Mexico_City',
+        'Perú': 'America/Lima',
+        'Ecuador': 'America/Guayaquil',
+        'Argentina': 'America/Argentina/Buenos_Aires',
+        'Chile': 'America/Santiago',
+        'República Dominicana': 'America/Santo_Domingo',
+      }
+
       // Create Company
       const company = await tx.company.create({
         data: {
@@ -42,6 +67,8 @@ export async function POST(request: NextRequest) {
           taxId: taxId?.trim() || null,
           email: companyEmail.trim().toLowerCase(),
           phone: companyPhone?.trim() || null,
+          country: country || 'Venezuela',
+          timezone: countryTz[country] || 'America/Caracas',
         },
       })
 
