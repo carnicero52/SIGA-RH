@@ -9,7 +9,12 @@ export async function GET(request: NextRequest) {
 
     const where: any = {}
     if (status) {
-      where.status = status
+      // Support comma-separated statuses: ?status=pending_hire,hired,offered
+      if (status.includes(',')) {
+        where.status = { in: status.split(',').map(s => s.trim()) }
+      } else {
+        where.status = status
+      }
     }
     if (vacantId) {
       where.vacantId = vacantId

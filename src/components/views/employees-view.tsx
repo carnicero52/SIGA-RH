@@ -173,6 +173,32 @@ function EmployeeFormDialog({
   editMode: boolean
   countryConfig: ReturnType<typeof useCompanyCountry>['config']
 }) {
+  const [approvedCandidates, setApprovedCandidates] = useState<any[]>([])
+
+  useEffect(() => {
+    if (!open || editMode) return
+    // Load approved/pending_hire candidates
+    fetch('/api/candidates?status=pending_hire,hired,offered')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setApprovedCandidates(data)
+        else setApprovedCandidates([])
+      })
+      .catch(() => setApprovedCandidates([]))
+  }, [open, editMode])
+
+  const applyCandidate = (candidateId: string) => {
+    const c = approvedCandidates.find(x => x.id === candidateId)
+    if (!c) return
+    setForm(prev => ({
+      ...prev,
+      firstName: c.firstName || '',
+      lastName: c.lastName || '',
+      email: c.email || '',
+      phone: c.phone || '',
+    }))
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh]">
@@ -180,6 +206,29 @@ function EmployeeFormDialog({
           <DialogTitle>{editMode ? 'Editar Empleado' : 'Nuevo Empleado'}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] pr-3">
+          {/* Candidate pre-fill — only in create mode */}
+          {!editMode && approvedCandidates.length > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-emerald-200 bg-emerald-50 space-y-2">
+              <p className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
+                👥 Candidatos aprobados disponibles
+              </p>
+              <Select onValueChange={applyCandidate}>
+                <SelectTrigger className="bg-white border-emerald-300 text-sm">
+                  <SelectValue placeholder="Seleccionar candidato aprobado para pre-llenar formulario..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {approvedCandidates.map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <span className="font-medium">{c.firstName} {c.lastName}</span>
+                      <span className="text-muted-foreground ml-2 text-xs">— {c.vacant?.title || 'Sin vacante'}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-emerald-700">Al seleccionar, se pre-llenan nombre, apellido, email y teléfono.</p>
+            </div>
+          )}
+
           <Tabs defaultValue="personal" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-4">
               <TabsTrigger value="personal">Personal</TabsTrigger>
