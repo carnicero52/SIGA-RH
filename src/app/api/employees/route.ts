@@ -139,6 +139,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No hay empresa configurada' }, { status: 400 })
     }
 
+    // Check plan status
+    if (firstCompany.planStatus === 'suspended') {
+      return NextResponse.json(
+        { error: 'Tu cuenta está suspendida. Contacta a soporte para reactivarla.' },
+        { status: 403 }
+      )
+    }
+
+    // Check employee limit
+    const currentCount = await db.employee.count({
+      where: { companyId: firstCompany.id, active: true },
+    })
+    if (currentCount >= firstCompany.maxEmployees) {
+      return NextResponse.json(
+        {
+          error: `Límite de empleados alcanzado (${firstCompany.maxEmployees} en plan ${firstCompany.plan}). Actualiza tu plan para agregar más.`,
+          limitReached: true,
+          currentCount,
+          maxEmployees: firstCompany.maxEmployees,
+          plan: firstCompany.plan,
+        },
+        { status: 403 }
+      )
+    }
+
     // Auto-generate PIN if not provided
     const autoPin = body.pin?.trim() || generatePin()
 

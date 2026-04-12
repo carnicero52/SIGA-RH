@@ -21,6 +21,15 @@ model Company {
   logo        String?
   brandColor  String   @default("#F59E0B")
   timezone    String   @default("America/Caracas")
+
+  // === SUSCRIPCIÓN / PLAN ===
+  plan            String   @default("free")    // free | professional | enterprise
+  planStatus      String   @default("active")  // active | suspended | cancelled | trial
+  trialEndsAt     DateTime?
+  planActivatedAt DateTime?
+  planExpiresAt   DateTime?
+  maxEmployees    Int      @default(10)         // limit per plan
+  adminNotes      String?                       // super-admin notes
   address     String?
   city        String?
   state       String?
