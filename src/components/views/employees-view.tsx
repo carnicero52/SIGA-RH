@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/app-store'
 import type { Employee, Branch, Department, Position } from '@/lib/types'
 import { employeeStatusLabels, employmentTypeLabels } from '@/lib/types'
+import { useCompanyCountry } from '@/hooks/useCompanyCountry'
 
 // ---- Auth helper ----
 function authHeaders() {
@@ -158,7 +159,7 @@ function PaginationBar({
 // ---- Employee form dialog ----
 function EmployeeFormDialog({
   open, onOpenChange, form, setForm, branches, departments, positions,
-  onSubmit, loading, editMode,
+  onSubmit, loading, editMode, countryConfig,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -170,6 +171,7 @@ function EmployeeFormDialog({
   onSubmit: () => void
   loading: boolean
   editMode: boolean
+  countryConfig: ReturnType<typeof useCompanyCountry>['config']
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -274,36 +276,46 @@ function EmployeeFormDialog({
                 </div>
               </div>
               <Separator />
+              {/* Dynamic ID fields by country */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>CURP</Label>
-                  <Input
-                    value={form.curp}
-                    onChange={(e) => setForm({ ...form, curp: e.target.value.toUpperCase() })}
-                    placeholder="CURP"
-                    maxLength={18}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>RFC</Label>
-                  <Input
-                    value={form.rfc}
-                    onChange={(e) => setForm({ ...form, rfc: e.target.value.toUpperCase() })}
-                    placeholder="RFC"
-                    maxLength={13}
-                  />
-                </div>
+                {countryConfig.fields.id1 && (
+                  <div className="space-y-1">
+                    <Label>{countryConfig.fields.id1.label}</Label>
+                    <Input
+                      value={form.curp}
+                      onChange={(e) => setForm({ ...form, curp: e.target.value.toUpperCase() })}
+                      placeholder={countryConfig.fields.id1.placeholder}
+                      maxLength={countryConfig.fields.id1.maxLength}
+                    />
+                    {countryConfig.fields.id1.hint && <p className="text-xs text-muted-foreground">{countryConfig.fields.id1.hint}</p>}
+                  </div>
+                )}
+                {countryConfig.fields.id2 && (
+                  <div className="space-y-1">
+                    <Label>{countryConfig.fields.id2.label}</Label>
+                    <Input
+                      value={form.rfc}
+                      onChange={(e) => setForm({ ...form, rfc: e.target.value.toUpperCase() })}
+                      placeholder={countryConfig.fields.id2.placeholder}
+                      maxLength={countryConfig.fields.id2.maxLength}
+                    />
+                    {countryConfig.fields.id2.hint && <p className="text-xs text-muted-foreground">{countryConfig.fields.id2.hint}</p>}
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>NSS</Label>
-                  <Input
-                    value={form.nss}
-                    onChange={(e) => setForm({ ...form, nss: e.target.value })}
-                    placeholder="Número de Seguridad Social"
-                    maxLength={11}
-                  />
-                </div>
+                {countryConfig.fields.ss && (
+                  <div className="space-y-1">
+                    <Label>{countryConfig.fields.ss.label}</Label>
+                    <Input
+                      value={form.nss}
+                      onChange={(e) => setForm({ ...form, nss: e.target.value })}
+                      placeholder={countryConfig.fields.ss.placeholder}
+                      maxLength={countryConfig.fields.ss.maxLength}
+                    />
+                    {countryConfig.fields.ss.hint && <p className="text-xs text-muted-foreground">{countryConfig.fields.ss.hint}</p>}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Tipo de Sangre</Label>
                   <Select value={form.bloodType || undefined} onValueChange={(v) => setForm({ ...form, bloodType: v })}>
@@ -497,6 +509,7 @@ function EmployeeFormDialog({
 // =====================
 export function EmployeesView() {
   const navigate = useAppStore((s) => s.navigate)
+  const { config: countryConfig } = useCompanyCountry()
 
   // Data state
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -955,6 +968,7 @@ export function EmployeesView() {
         onSubmit={handleSubmit}
         loading={submitting}
         editMode={editMode}
+        countryConfig={countryConfig}
       />
 
       {/* Delete confirmation */}

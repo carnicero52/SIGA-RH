@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useCompanyCountry } from '@/hooks/useCompanyCountry'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -184,6 +185,7 @@ function SummaryCard({ icon: Icon, label, value, colorClass = 'text-primary' }: 
 export function EmployeeDetailView() {
   const { viewParams, navigate } = useAppStore()
   const employeeId = viewParams.id as string
+  const { config: countryConfig } = useCompanyCountry()
 
   const [employee, setEmployee] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -669,12 +671,11 @@ export function EmployeeDetailView() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="identificacion">Identificación</SelectItem>
-                  <SelectItem value="curp">CURP</SelectItem>
-                  <SelectItem value="rfc">RFC</SelectItem>
-                  <SelectItem value="nss">NSS</SelectItem>
+                  {countryConfig.fields.id1 && <SelectItem value="curp">{countryConfig.fields.id1.label}</SelectItem>}
+                  {countryConfig.fields.id2 && <SelectItem value="rfc">{countryConfig.fields.id2.label}</SelectItem>}
+                  {countryConfig.fields.ss && <SelectItem value="nss">{countryConfig.fields.ss.label}</SelectItem>}
                   <SelectItem value="comprobante_domicilio">Comprobante de Domicilio</SelectItem>
                   <SelectItem value="acta_nacimiento">Acta de Nacimiento</SelectItem>
-                  <SelectItem value="cartilla_militar">Cartilla Militar</SelectItem>
                   <SelectItem value="certificado_estudios">Certificado de Estudios</SelectItem>
                   <SelectItem value="referencias">Referencias</SelectItem>
                   <SelectItem value="contrato">Contrato</SelectItem>
