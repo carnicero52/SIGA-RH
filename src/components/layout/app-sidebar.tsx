@@ -1,6 +1,8 @@
 'use client'
 
 import { useAppStore, type ViewType } from '@/store/app-store'
+import { useCompanyCountry } from '@/hooks/useCompanyCountry'
+import { DigitalClock } from '@/components/ui/clock'
 import {
   LayoutDashboard, Users, Building2, GitBranch, Briefcase,
   Clock, QrCode, ShieldAlert, FileText, Search, BarChart3,
@@ -198,6 +200,7 @@ export function AppSidebar() {
 
 export function AppHeader() {
   const { currentView, toggleSidebar } = useAppStore()
+  const { timezone } = useCompanyCountry()
   const [notifications, setNotifications] = useState<any[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
 
@@ -258,6 +261,9 @@ export function AppHeader() {
       <div className="flex-1">
         <h2 className="text-lg font-semibold">{viewTitles[currentView] || 'SIGA-RH'}</h2>
       </div>
+
+      {/* Digital clock + theme toggle */}
+      <DigitalClock timezone={timezone} />
 
       {/* Notification bell */}
       <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>

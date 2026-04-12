@@ -49,6 +49,7 @@ export async function PUT(request: NextRequest) {
         ...(body.slug !== undefined && { slug: body.slug || null }),
         ...(body.slogan !== undefined && { slogan: body.slogan || null }),
         ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
+        ...(body.timezone !== undefined && { timezone: body.timezone }),
         // SMTP
         ...(body.smtpHost !== undefined && { smtpHost: body.smtpHost || null }),
         ...(body.smtpPort !== undefined && { smtpPort: body.smtpPort ? Number(body.smtpPort) : null }),

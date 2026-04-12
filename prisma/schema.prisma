@@ -20,6 +20,7 @@ model Company {
   taxId       String?
   logo        String?
   brandColor  String   @default("#F59E0B")
+  timezone    String   @default("America/Caracas")
   address     String?
   city        String?
   state       String?

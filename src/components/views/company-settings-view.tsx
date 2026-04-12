@@ -17,7 +17,7 @@ import {
   Trash2, AlertTriangle, Image as ImageIcon, Globe,
 } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { COUNTRY_LIST } from '@/lib/country-fields'
+import { COUNTRY_LIST, getCountryConfig } from '@/lib/country-fields'
 import { clearCountryCache } from '@/hooks/useCompanyCountry'
 import { toast } from 'sonner'
 
@@ -35,6 +35,7 @@ interface CompanySettings {
   brandColor: string
   logo: string | null
   country: string
+  timezone: string
   smtpHost: string | null
   smtpPort: number | null
   smtpUser: string | null
@@ -230,19 +231,38 @@ export function CompanySettingsView() {
                 </Label>
                 <Select
                   value={settings.country || 'Venezuela'}
-                  onValueChange={(v) => setSettings({ ...settings, country: v })}
+                  onValueChange={(v) => {
+                    const cfg = getCountryConfig(v)
+                    setSettings({ ...settings, country: v, timezone: cfg.timezone })
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un país" />
                   </SelectTrigger>
                   <SelectContent className="max-h-64">
-                    {COUNTRY_LIST.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
+                    {COUNTRY_LIST.map((c) => {
+                      const cfg = getCountryConfig(c)
+                      return <SelectItem key={c} value={c}>{cfg.flag} {c}</SelectItem>
+                    })}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Define qué documentos de identidad se solicitan a los empleados (Cédula, RIF, IVSS, etc.)
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2">
+                  🕑 Zona Horaria
+                </Label>
+                <Input
+                  value={settings.timezone || 'America/Caracas'}
+                  onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+                  placeholder="America/Caracas"
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Se rellena automáticamente al seleccionar el país. Afecta el reloj del panel y las notificaciones programadas.
                 </p>
               </div>
 
