@@ -4,7 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 const SUPERADMIN_SECRET = process.env.SUPERADMIN_SECRET || 'siga-superadmin-2025'
 
 function verifySuperAdmin(request: NextRequest) {
-  const secret = request.headers.get('x-superadmin-secret')
+  const secret =
+    request.headers.get('x-superadmin-secret') ||
+    request.nextUrl.searchParams.get('secret')
   if (secret !== SUPERADMIN_SECRET) throw new Error('No autorizado')
 }
 
