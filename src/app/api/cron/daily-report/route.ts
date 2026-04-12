@@ -75,6 +75,12 @@ async function generateDailyReport(companyId: string) {
     return { name: branch.name, present, absent: total - present, total }
   })
 
+  // Candidates pending hire
+  const pendingHire = await db.candidate.findMany({
+    where: { companyId, status: { in: ['pending_hire', 'offered', 'interview'] } },
+    include: { vacant: { select: { title: true } } },
+  })
+
   return {
     company: company.name,
     date: formatTime(new Date(), TIMEZONE),
@@ -87,6 +93,7 @@ async function generateDailyReport(companyId: string) {
       checkIns: attendance.length,
     },
     byBranch,
+    pendingHire,
   }
 }
 
@@ -162,8 +169,18 @@ function formatEmailHTML(report: Awaited<ReturnType<typeof generateDailyReport>>
         </tbody>
       </table>
     </div>
+    ${pendingHire.length > 0 ? `
+    <div class="content" style="padding-top:0">
+      <h3 style="margin: 16px 0;">👥 Candidatos Pendientes de Decisión</h3>
+      <table class="branch-table">
+        <thead><tr><th>Candidato</th><th>Vacante</th><th>Estado</th></tr></thead>
+        <tbody>
+          ${pendingHire.map(c => `<tr><td>${c.firstName} ${c.lastName}</td><td>${c.vacant?.title || '-'}</td><td>${c.status === 'pending_hire' ? '⏳ Pre-aprobado' : c.status === 'offered' ? '📌 Oferta enviada' : '🗓️ Entrevista'}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
     <div class="footer">
-      Generado automáticamente por SIGA-RH — Zona horaria: ${stats.totalEmployees > 0 ? TIMEZONE : TIMEZONE}
+      Generado automáticamente por SIGA-RH — Zona horaria: ${TIMEZONE}
     </div>
   </div>
 </body>
@@ -171,7 +188,7 @@ function formatEmailHTML(report: Awaited<ReturnType<typeof generateDailyReport>>
 }
 
 function formatTelegramMessage(report: Awaited<ReturnType<typeof generateDailyReport>>): string {
-  const { company, date, stats, byBranch } = report
+  const { company, date, stats, byBranch, pendingHire } = report
 
   let message = `📊 *REPORTE DIARIO DE ASISTENCIA*\n\n`
   message += `🏢 *${company}*\n`
@@ -180,6 +197,13 @@ function formatTelegramMessage(report: Awaited<ReturnType<typeof generateDailyRe
   message += `❌ Ausentes: *${stats.absent}*\n`
   message += `⏰ Retardos: *${stats.late}*\n`
   message += `👥 Total: *${stats.totalEmployees}*\n\n`
+  if (pendingHire && pendingHire.length > 0) {
+    message += `👥 *Candidatos pendientes: ${pendingHire.length}*\n`
+    pendingHire.forEach((c: any) => {
+      message += `• ${c.firstName} ${c.lastName} \- ${c.vacant?.title || 'vacante'}\n`
+    })
+    message += `\n`
+  }
   message += `📍 *Por Sucursal:*\n`
   byBranch.forEach((b) => {
     message += `• ${b.name}: ${b.present}/${b.total} presentes\n`

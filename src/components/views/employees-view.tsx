@@ -511,6 +511,15 @@ export function EmployeesView() {
   const navigate = useAppStore((s) => s.navigate)
   const { config: countryConfig } = useCompanyCountry()
 
+  // Auto-open dialog if coming from hire flow
+  useEffect(() => {
+    const prefill = typeof window !== 'undefined' ? localStorage.getItem('hire_prefill') : null
+    if (prefill) {
+      // Small delay to let reference data load first
+      setTimeout(() => openCreateDialog(), 800)
+    }
+  }, [])
+
   // Data state
   const [employees, setEmployees] = useState<Employee[]>([])
   const [total, setTotal] = useState(0)
@@ -713,7 +722,18 @@ export function EmployeesView() {
   const openCreateDialog = () => {
     setEditMode(false)
     setEditingId(null)
-    setForm(emptyForm)
+    // Check if coming from candidate hire flow
+    const prefill = typeof window !== 'undefined' ? localStorage.getItem('hire_prefill') : null
+    if (prefill) {
+      try {
+        const data = JSON.parse(prefill)
+        setForm({ ...emptyForm, firstName: data.firstName || '', lastName: data.lastName || '', email: data.email || '', phone: data.phone || '' })
+        localStorage.removeItem('hire_prefill')
+        toast.info('Formulario pre-llenado con datos del candidato')
+      } catch { setForm(emptyForm) }
+    } else {
+      setForm(emptyForm)
+    }
     setDialogOpen(true)
   }
 
