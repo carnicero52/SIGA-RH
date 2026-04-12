@@ -6,7 +6,7 @@ import { DigitalClock } from '@/components/ui/clock'
 import {
   LayoutDashboard, Users, Building2, GitBranch, Briefcase,
   Clock, QrCode, ShieldAlert, FileText, Search, BarChart3,
-  Settings, ChevronDown, LogOut, Bell, Menu, Monitor, Smartphone
+  Settings, ChevronDown, LogOut, Bell, Menu, Monitor, Smartphone, DollarSign
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
@@ -69,6 +69,7 @@ const navGroups: NavGroup[] = [
     title: 'ANÁLISIS',
     items: [
       { id: 'reports', label: 'Reportes', icon: <BarChart3 className="h-4 w-4" /> },
+      { id: 'payroll', label: 'Nómina', icon: <DollarSign className="h-4 w-4" /> },
     ],
   },
   {
@@ -224,6 +225,7 @@ export function AppHeader() {
     company: 'Configuración',
     settings: 'Configuración',
     'company-settings': 'Configuración del Sistema',
+    payroll: 'Nómina',
   }
 
   useEffect(() => {

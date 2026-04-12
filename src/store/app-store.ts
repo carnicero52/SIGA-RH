@@ -24,6 +24,7 @@ export type ViewType =
   | 'company'
   | 'settings'
   | 'company-settings'
+  | 'payroll'
 
 interface User {
   id: string

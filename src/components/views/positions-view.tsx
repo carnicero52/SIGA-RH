@@ -113,6 +113,8 @@ interface PosFormData {
   salary: string
   currency: string
   level: string
+  payrollFrequency: string
+  overtimeRate: string
 }
 
 const defaultFormData: PosFormData = {
@@ -122,6 +124,8 @@ const defaultFormData: PosFormData = {
   salary: '',
   currency: 'USD',
   level: '',
+  payrollFrequency: 'biweekly',
+  overtimeRate: '1.5',
 }
 
 export function PositionsView() {
@@ -199,6 +203,8 @@ export function PositionsView() {
       salary: pos.salary != null ? String(pos.salary) : '',
       currency: (pos as any).currency || 'USD',
       level: (pos as any).level || '',
+      payrollFrequency: (pos as any).payrollFrequency || 'biweekly',
+      overtimeRate: String((pos as any).overtimeRate || '1.5'),
     })
     setDialogOpen(true)
   }
@@ -223,6 +229,8 @@ export function PositionsView() {
         salary: formData.salary ? Number(formData.salary) : null,
         currency: formData.currency || 'USD',
         level: formData.level || null,
+        payrollFrequency: formData.payrollFrequency || 'biweekly',
+        overtimeRate: formData.overtimeRate ? Number(formData.overtimeRate) : 1.5,
       }
 
       if (editingPos) {
@@ -522,6 +530,25 @@ export function PositionsView() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label>Frecuencia de pago</Label>
+                <Select value={formData.payrollFrequency} onValueChange={(v) => setFormData({ ...formData, payrollFrequency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">📅 Semanal</SelectItem>
+                    <SelectItem value="biweekly">📆 Quincenal</SelectItem>
+                    <SelectItem value="monthly">🗓️ Mensual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Multiplicador Horas Extra</Label>
+                <Input type="number" step="0.1" min="1" max="3" value={formData.overtimeRate} onChange={(e) => setFormData({ ...formData, overtimeRate: e.target.value })} placeholder="1.5" />
+                <p className="text-xs text-muted-foreground">1.5 = 50% extra por hora</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
