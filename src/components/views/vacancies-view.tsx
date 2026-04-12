@@ -24,8 +24,9 @@ import {
 } from '@/components/ui/select'
 import {
   Briefcase, Plus, MapPin, Users, DollarSign, Calendar, Edit, Trash2,
-  Building2, Filter,
+  Building2, Filter, QrCode, ExternalLink,
 } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { Vacant, Department, Position } from '@/lib/types'
@@ -66,6 +67,8 @@ export function VacanciesView() {
   const [editing, setEditing] = useState<Vacant | null>(null)
   const [form, setForm] = useState(defaultForm)
   const [saving, setSaving] = useState(false)
+  const [qrModalOpen, setQrModalOpen] = useState(false)
+  const [qrVacancy, setQrVacancy] = useState<Vacant | null>(null)
 
   const companyId = typeof window !== 'undefined'
     ? JSON.parse(localStorage.getItem('siga_user') || '{}').companyId
@@ -215,6 +218,27 @@ export function VacanciesView() {
               </SelectContent>
             </Select>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              const url = typeof window !== 'undefined' ? `${window.location.origin}/careers` : '/careers'
+              window.open(url, '_blank')
+            }}
+          >
+            <ExternalLink className="h-4 w-4" />
+            <span className="hidden sm:inline">Ver Bolsa</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => { setQrVacancy(null); setQrModalOpen(true) }}
+          >
+            <QrCode className="h-4 w-4" />
+            <span className="hidden sm:inline">QR Bolsa</span>
+          </Button>
           <Button onClick={openCreate} size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Nueva Vacante</span>
@@ -314,6 +338,9 @@ export function VacanciesView() {
                     </span>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600" title="QR de esta vacante" onClick={() => { setQrVacancy(vacant); setQrModalOpen(true) }}>
+                      <QrCode className="h-3.5 w-3.5" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(vacant)}>
                       <Edit className="h-3.5 w-3.5" />
                     </Button>
@@ -460,6 +487,62 @@ export function VacanciesView() {
               {saving ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Modal — Bolsa de Empleo */}
+      <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-emerald-600" />
+              QR Bolsa de Empleo
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-2">
+            <p className="text-sm text-center text-muted-foreground">
+              {qrVacancy
+                ? `Escanea para aplicar a: ${qrVacancy.title}`
+                : 'Escanea para ver todas las vacantes disponibles'
+              }
+            </p>
+            {typeof window !== 'undefined' && (
+              <QRCodeSVG
+                value={qrVacancy
+                  ? `${window.location.origin}/careers?vacancy=${qrVacancy.id}`
+                  : `${window.location.origin}/careers`
+                }
+                size={240}
+                bgColor="#ffffff"
+                fgColor="#059669"
+                level="H"
+                includeMargin
+              />
+            )}
+            <p className="text-xs text-muted-foreground font-mono text-center break-all">
+              {typeof window !== 'undefined'
+                ? qrVacancy
+                  ? `${window.location.origin}/careers?vacancy=${qrVacancy.id}`
+                  : `${window.location.origin}/careers`
+                : '/careers'
+              }
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                const url = typeof window !== 'undefined'
+                  ? qrVacancy
+                    ? `${window.location.origin}/careers?vacancy=${qrVacancy.id}`
+                    : `${window.location.origin}/careers`
+                  : '/careers'
+                window.open(url, '_blank')
+              }}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" /> Abrir en el navegador
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

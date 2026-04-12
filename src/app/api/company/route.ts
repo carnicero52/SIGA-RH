@@ -47,6 +47,7 @@ export async function PUT(request: NextRequest) {
         ...(body.website !== undefined && { website: body.website || null }),
         // Branding
         ...(body.slug !== undefined && { slug: body.slug || null }),
+        ...(body.slogan !== undefined && { slogan: body.slogan || null }),
         ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
         // SMTP
         ...(body.smtpHost !== undefined && { smtpHost: body.smtpHost || null }),

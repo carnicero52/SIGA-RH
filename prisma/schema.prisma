@@ -16,6 +16,7 @@ model Company {
   id          String   @id @default(cuid())
   name        String
   slug        String?  @unique
+  slogan      String?
   taxId       String?
   logo        String?
   brandColor  String   @default("#F59E0B")
