@@ -1,5 +1,50 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import nodemailer from 'nodemailer'
+
+function generatePin(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+async function sendPinEmail(
+  to: string, employeeName: string, pin: string, company: any
+) {
+  if (!company.smtpEnabled || !company.smtpUser || !company.smtpPassword) return false
+  try {
+    const transporter = nodemailer.createTransport({
+      host: company.smtpHost || 'smtp.gmail.com',
+      port: company.smtpPort || 465,
+      secure: (company.smtpPort || 465) === 465,
+      auth: { user: company.smtpUser, pass: company.smtpPassword },
+    })
+    await transporter.sendMail({
+      from: company.smtpFrom || company.smtpUser,
+      to,
+      subject: `🔐 Tu PIN de Asistencia — ${company.name}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#10b981,#059669);padding:28px 24px;text-align:center">
+          <h1 style="color:white;margin:0;font-size:22px">Acceso al Sistema de Asistencia</h1>
+          <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px">${company.name}</p>
+        </div>
+        <div style="padding:28px 24px">
+          <p style="color:#374151">Hola <strong>${employeeName}</strong>,</p>
+          <p style="color:#6b7280;font-size:14px">Tu PIN personal para marcar asistencia. No lo compartas con nadie.</p>
+          <div style="background:#f0fdf4;border:2px dashed #10b981;border-radius:10px;padding:24px;text-align:center;margin:20px 0">
+            <p style="color:#6b7280;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px">Tu PIN</p>
+            <p style="color:#059669;font-size:42px;font-weight:900;letter-spacing:10px;margin:0;font-family:monospace">${pin}</p>
+          </div>
+          <p style="color:#92400e;background:#fef3c7;padding:12px;border-radius:8px;font-size:13px">
+            ⚠️ Este PIN es personal e intransferible.
+          </p>
+        </div>
+        <div style="background:#f9fafb;padding:14px 24px;text-align:center;border-top:1px solid #e5e7eb">
+          <p style="color:#9ca3af;font-size:11px;margin:0">Enviado automáticamente por SIGA-RH · ${company.name}</p>
+        </div>
+      </div>`,
+    })
+    return true
+  } catch { return false }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -94,6 +139,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No hay empresa configurada' }, { status: 400 })
     }
 
+    // Auto-generate PIN if not provided
+    const autoPin = body.pin?.trim() || generatePin()
+
     const existingEmail = await db.employee.findFirst({
       where: { companyId: firstCompany.id, email: email.trim(), active: true },
     })
@@ -141,7 +189,7 @@ export async function POST(request: NextRequest) {
         bankAccount: bankAccount?.trim() || null,
         bankClabe: bankClabe?.trim() || null,
         notes: notes?.trim() || null,
-        pin: body.pin?.trim() || null,
+        pin: autoPin,
       },
       include: {
         branch: { select: { id: true, name: true } },
@@ -150,7 +198,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(employee, { status: 201 })
+    // Send PIN by email (non-blocking — don't fail if email fails)
+    const emailSent = await sendPinEmail(
+      employee.email,
+      `${employee.firstName} ${employee.lastName}`,
+      autoPin,
+      firstCompany
+    )
+
+    return NextResponse.json({ ...employee, pinEmailSent: emailSent }, { status: 201 })
   } catch (error: any) {
     console.error('Create employee error:', error)
     return NextResponse.json({ error: 'Error al crear empleado' }, { status: 500 })

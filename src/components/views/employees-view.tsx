@@ -26,7 +26,7 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Plus, Search, ChevronLeft, ChevronRight, Pencil, Trash2, Users,
-  Building2, GitBranch, Briefcase, UserCircle,
+  Building2, GitBranch, Briefcase, UserCircle, KeyRound,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -881,6 +881,31 @@ export function EmployeesView() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost" size="icon" className="h-8 w-8"
+                            title="Enviar PIN por email"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch('/api/employees/send-pin', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('siga_token')}` },
+                                  body: JSON.stringify({ employeeId: emp.id }),
+                                })
+                                const data = await res.json()
+                                if (data.success) {
+                                  if (data.emailSent) {
+                                    toast.success(`PIN enviado a ${data.sentTo}`)
+                                  } else {
+                                    toast.info(`PIN generado: ${data.pin} (SMTP no configurado)`)
+                                  }
+                                } else throw new Error(data.error)
+                              } catch (e: any) {
+                                toast.error(e.message || 'Error al enviar PIN')
+                              }
+                            }}
+                          >
+                            <KeyRound className="h-4 w-4 text-emerald-600" />
+                          </Button>
                           <Button
                             variant="ghost" size="icon" className="h-8 w-8"
                             onClick={() => handleEdit(emp)}
