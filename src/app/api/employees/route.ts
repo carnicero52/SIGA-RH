@@ -141,6 +141,7 @@ export async function POST(request: NextRequest) {
         bankAccount: bankAccount?.trim() || null,
         bankClabe: bankClabe?.trim() || null,
         notes: notes?.trim() || null,
+        pin: body.pin?.trim() || null,
       },
       include: {
         branch: { select: { id: true, name: true } },

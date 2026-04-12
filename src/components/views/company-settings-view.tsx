@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Building2, Mail, MessageSquare, Bell, Send, TestTube, Save } from 'lucide-react'
+import { Building2, Mail, MessageSquare, Bell, Send, TestTube, Save, Trash2, AlertTriangle } from 'lucide-react'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 function authHeaders() {
   return {
@@ -131,7 +132,7 @@ export function CompanySettingsView() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <Tabs defaultValue="info" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="info">
             <Building2 className="w-4 h-4 mr-2" />
             Información
@@ -147,6 +148,10 @@ export function CompanySettingsView() {
           <TabsTrigger value="integrations">
             <MessageSquare className="w-4 h-4 mr-2" />
             Integraciones
+          </TabsTrigger>
+          <TabsTrigger value="maintenance">
+            <Trash2 className="w-4 h-4 mr-2" />
+            Mantenimiento
           </TabsTrigger>
         </TabsList>
 
@@ -382,6 +387,76 @@ export function CompanySettingsView() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        {/* MANTENIMIENTO */}
+        <TabsContent value="maintenance">
+          <div className="space-y-4">
+            <Card className="border-red-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-red-700">
+                  <AlertTriangle className="w-5 h-5" />
+                  Limpiar Historial de Datos
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Estas acciones son irreversibles. Los datos eliminados no se pueden recuperar.</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[
+                  { type: 'attendance', label: 'Registros de Asistencia', desc: 'Elimina todos los registros de entradas y salidas' },
+                  { type: 'incidents', label: 'Incidencias', desc: 'Elimina todas las incidencias registradas' },
+                  { type: 'notifications', label: 'Notificaciones', desc: 'Limpia el historial de notificaciones del sistema' },
+                  { type: 'candidates', label: 'Candidatos', desc: 'Elimina todos los candidatos de vacantes' },
+                  { type: 'contracts', label: 'Contratos', desc: 'Elimina todos los contratos generados' },
+                ].map(({ type, label, desc }) => (
+                  <div key={type} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <p className="text-sm font-medium">{label}</p>
+                      <p className="text-xs text-muted-foreground">{desc}</p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Limpiar
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar {label}?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta acción eliminará <strong>TODOS</strong> los registros de {label.toLowerCase()} de forma permanente. No se puede deshacer.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch('/api/admin/clear', {
+                                  method: 'DELETE',
+                                  headers: authHeaders(),
+                                  body: JSON.stringify({ type }),
+                                })
+                                const data = await res.json()
+                                if (data.success) {
+                                  toast.success(`${data.deletedCount} registros de ${label.toLowerCase()} eliminados`)
+                                } else {
+                                  throw new Error(data.error)
+                                }
+                              } catch (err: any) {
+                                toast.error(err.message || 'Error al eliminar')
+                              }
+                            }}
+                          >
+                            Sí, eliminar todo
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

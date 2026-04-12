@@ -136,6 +136,7 @@ export async function PUT(
         ...(bankAccount !== undefined && { bankAccount: bankAccount?.trim() || null }),
         ...(bankClabe !== undefined && { bankClabe: bankClabe?.trim() || null }),
         ...(notes !== undefined && { notes: notes?.trim() || null }),
+        ...(body.pin !== undefined && { pin: body.pin?.trim() || null }),
       },
       include: {
         branch: { select: { id: true, name: true } },

@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Camera, QrCode, MapPin, Clock, CheckCircle2, XCircle, ArrowLeft, User } from 'lucide-react'
+import { Camera, QrCode, MapPin, Clock, CheckCircle2, ArrowLeft, User, Hash, Mail, Phone, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { Toaster } from 'sonner'
 
@@ -14,13 +13,15 @@ import { Toaster } from 'sonner'
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-type Step = 'idle' | 'scanning' | 'verified' | 'selfie' | 'gps' | 'confirm' | 'success'
+type Step = 'idle' | 'scanning' | 'identify' | 'selfie' | 'gps' | 'confirm' | 'success'
+type IdentifierType = 'pin' | 'email' | 'phone'
 
-interface Employee {
+interface IdentifiedEmployee {
   id: string
   firstName: string
   lastName: string
   employeeNumber: string | null
+  hasPendingCheckIn: boolean
 }
 
 interface GpsData {
@@ -32,6 +33,7 @@ interface GpsData {
 interface SuccessData {
   time: string
   branchName: string
+  employeeName: string
   recordType: string
   status: string
 }
@@ -53,19 +55,24 @@ function formatDateES(): string {
 
 export default function CheckInPage() {
   const [step, setStep] = useState<Step>('idle')
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
-  const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [scannedCode, setScannedCode] = useState('')
   const [manualCode, setManualCode] = useState('')
   const [branchName, setBranchName] = useState('')
   const [branchId, setBranchId] = useState('')
   const [loadingQr, setLoadingQr] = useState(false)
+
+  // Identification
+  const [identifierType, setIdentifierType] = useState<IdentifierType>('pin')
+  const [identifierValue, setIdentifierValue] = useState('')
+  const [showIdentifier, setShowIdentifier] = useState(false)
+  const [identifyLoading, setIdentifyLoading] = useState(false)
+  const [identifiedEmployee, setIdentifiedEmployee] = useState<IdentifiedEmployee | null>(null)
+  const [recordType, setRecordType] = useState<'check_in' | 'check_out'>('check_in')
+
+  // Selfie / GPS / Submit
   const [selfieData, setSelfieData] = useState('')
   const [gpsData, setGpsData] = useState<GpsData | null>(null)
   const [gpsError, setGpsError] = useState('')
-  const [recordType, setRecordType] = useState<'check_in' | 'check_out'>('check_in')
-  const [hasPendingCheckIn, setHasPendingCheckIn] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [successData, setSuccessData] = useState<SuccessData | null>(null)
 
@@ -84,7 +91,6 @@ export default function CheckInPage() {
     }
   }, [])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopScanner()
@@ -104,7 +110,7 @@ export default function CheckInPage() {
       await scanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
-        (text: string) => handleQrScanned(text, scanner),
+        (text: string) => { stopScanner(scanner); verifyQrCode(text) },
         () => {}
       )
     } catch {
@@ -122,37 +128,60 @@ export default function CheckInPage() {
     scannerRef.current = null
   }
 
-  const handleQrScanned = async (code: string, scanner?: any) => {
-    await stopScanner(scanner)
-    await verifyQrCode(code)
-  }
-
   const verifyQrCode = async (code: string) => {
     setLoadingQr(true)
-    setScannedCode(code)
     try {
       const res = await fetch(`/api/attendance/public-qrcode?qrcode=${encodeURIComponent(code)}`)
       const data = await res.json()
       if (!data.valid) {
         toast.error(data.error || 'Código QR no válido o expirado')
         setStep('idle')
-        setLoadingQr(false)
         return
       }
       setBranchName(data.branchName || 'Sucursal')
       setBranchId(data.branchId || '')
       setScannedCode(data.qrId || code)
-      if (data.employees?.length > 0) {
-        setEmployees(data.employees)
-        setLoadingEmployees(false)
-      }
       toast.success('QR Verificado ✓')
-      setStep('verified')
+      setStep('identify')
     } catch {
       toast.error('Error al verificar código QR')
       setStep('idle')
     } finally {
       setLoadingQr(false)
+    }
+  }
+
+  // ── Employee Identification ───────────────────────────────────────────────
+
+  const handleIdentify = async () => {
+    if (!identifierValue.trim()) {
+      toast.error('Ingresa tu ' + (identifierType === 'pin' ? 'PIN' : identifierType === 'email' ? 'correo electrónico' : 'teléfono'))
+      return
+    }
+    setIdentifyLoading(true)
+    try {
+      const res = await fetch('/api/attendance/identify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ branchId, identifier: identifierValue.trim(), type: identifierType }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'No se encontró el empleado')
+        return
+      }
+      setIdentifiedEmployee(data)
+      if (data.hasPendingCheckIn) {
+        setRecordType('check_out')
+      } else {
+        setRecordType('check_in')
+      }
+      // Proceed to selfie
+      await startSelfieCamera()
+    } catch {
+      toast.error('Error al identificar empleado')
+    } finally {
+      setIdentifyLoading(false)
     }
   }
 
@@ -171,7 +200,7 @@ export default function CheckInPage() {
       }
     } catch {
       toast.error('No se pudo acceder a la cámara frontal')
-      setStep('verified')
+      setStep('identify')
     }
   }
 
@@ -199,21 +228,10 @@ export default function CheckInPage() {
   // ── GPS ───────────────────────────────────────────────────────────────────
 
   const captureGps = (): Promise<void> => new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      setGpsError('Geolocalización no disponible')
-      resolve()
-      return
-    }
+    if (!navigator.geolocation) { setGpsError('Geolocalización no disponible'); resolve(); return }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGpsData({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy })
-        resolve()
-      },
-      (err) => {
-        const msgs: Record<number, string> = { 1: 'Permiso de ubicación denegado', 2: 'Ubicación no disponible', 3: 'Tiempo agotado' }
-        setGpsError(msgs[err.code] || 'No se pudo obtener ubicación')
-        resolve()
-      },
+      (pos) => { setGpsData({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }); resolve() },
+      (err) => { setGpsError(['', 'Permiso denegado', 'No disponible', 'Tiempo agotado'][err.code] || 'Error'); resolve() },
       { enableHighAccuracy: true, timeout: 15000 }
     )
   })
@@ -228,9 +246,7 @@ export default function CheckInPage() {
   // ── Submit ────────────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
-    if (!selectedEmployeeId) { toast.error('Selecciona un empleado'); return }
-    if (!scannedCode) { toast.error('No hay código QR verificado'); return }
-
+    if (!identifiedEmployee || !scannedCode) return
     setSubmitting(true)
     try {
       const res = await fetch('/api/attendance/public-checkin', {
@@ -238,7 +254,7 @@ export default function CheckInPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           qrCodeId: scannedCode,
-          employeeId: selectedEmployeeId,
+          employeeId: identifiedEmployee.id,
           recordType,
           latitude: gpsData?.latitude ?? null,
           longitude: gpsData?.longitude ?? null,
@@ -248,13 +264,13 @@ export default function CheckInPage() {
           notes: gpsError ? `GPS: ${gpsError}` : null,
         }),
       })
-
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Error al registrar')
 
       setSuccessData({
         time: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         branchName,
+        employeeName: `${identifiedEmployee.firstName} ${identifiedEmployee.lastName}`,
         recordType: recordType === 'check_in' ? 'Entrada' : 'Salida',
         status: result.status === 'late' ? 'Retardo' : result.status === 'early_departure' ? 'Salida anticipada' : 'A Tiempo',
       })
@@ -279,28 +295,32 @@ export default function CheckInPage() {
     setSelfieData('')
     setGpsData(null)
     setGpsError('')
+    setIdentifierValue('')
+    setIdentifiedEmployee(null)
     setRecordType('check_in')
-    setHasPendingCheckIn(false)
     setSuccessData(null)
-    setSelectedEmployeeId('')
   }
 
   const handleBack = () => {
     stopSelfieStream()
     if (step === 'scanning') { stopScanner(); setStep('idle') }
-    else if (step === 'verified') { setStep('idle'); setScannedCode(''); setBranchName('') }
-    else if (step === 'selfie') { stopSelfieStream(); setStep('verified'); setSelfieData('') }
-    else if (step === 'confirm') { setStep('verified') }
+    else if (step === 'identify') { setStep('idle'); setScannedCode(''); setBranchName('') }
+    else if (step === 'selfie') { stopSelfieStream(); setStep('identify'); setSelfieData('') }
+    else if (step === 'confirm') { setStep('identify') }
     else { handleReset() }
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  const identifierIcons = { pin: <Hash className="h-4 w-4" />, email: <Mail className="h-4 w-4" />, phone: <Phone className="h-4 w-4" /> }
+  const identifierLabels = { pin: 'PIN de acceso', email: 'Correo electrónico', phone: 'Teléfono' }
+  const identifierPlaceholders = { pin: '••••', email: 'empleado@empresa.com', phone: '04XX-XXXXXXX' }
+
   return (
     <div className="min-h-screen bg-background">
       <Toaster richColors position="top-center" />
 
-      {/* Header — NO links to admin panel */}
+      {/* Header — no links to admin panel */}
       <div className="border-b bg-card px-4 py-3 flex items-center gap-3">
         {step !== 'idle' && step !== 'success' && (
           <Button variant="ghost" size="sm" onClick={handleBack} className="h-8 w-8 p-0">
@@ -313,68 +333,41 @@ export default function CheckInPage() {
           </div>
           <span className="font-semibold text-sm">Marcar Asistencia</span>
         </div>
-        <span className="text-xs text-muted-foreground">{formatDateES()}</span>
+        <span className="text-xs text-muted-foreground hidden sm:block">{formatDateES()}</span>
       </div>
 
       <div className="mx-auto max-w-md p-4 space-y-4 pb-12">
 
         {/* ── IDLE ── */}
         {step === 'idle' && (
-          <>
-            {/* Employee selector */}
-            {employees.length > 0 && (
-              <Card>
-                <CardContent className="p-4">
-                  <label className="text-sm font-medium mb-2 block">Selecciona tu nombre</label>
-                  <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-                    <SelectTrigger><SelectValue placeholder="— Elige un empleado —" /></SelectTrigger>
-                    <SelectContent>
-                      {employees.map((e) => (
-                        <SelectItem key={e.id} value={e.id}>
-                          {e.firstName} {e.lastName} {e.employeeNumber ? `(#${e.employeeNumber})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardContent className="p-6 flex flex-col items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                  <QrCode className="h-8 w-8 text-emerald-600" />
+          <Card>
+            <CardContent className="p-6 flex flex-col items-center gap-4">
+              <div className="h-16 w-16 rounded-2xl bg-emerald-50 flex items-center justify-center">
+                <QrCode className="h-8 w-8 text-emerald-600" />
+              </div>
+              <div className="text-center">
+                <h2 className="font-semibold text-lg">Escanea el código QR</h2>
+                <p className="text-sm text-muted-foreground">Escanea el código de tu sucursal para marcar asistencia</p>
+              </div>
+              <Button onClick={startScanner} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" size="lg">
+                <QrCode className="h-5 w-5 mr-2" /> Escanear Código QR
+              </Button>
+              <div className="w-full">
+                <p className="text-xs text-muted-foreground mb-2 text-center">O ingresa el código manualmente:</p>
+                <div className="flex gap-2">
+                  <Input value={manualCode} onChange={(e) => setManualCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && verifyQrCode(manualCode.trim())} placeholder="Código QR..." className="font-mono text-sm" />
+                  <Button variant="outline" onClick={() => verifyQrCode(manualCode.trim())} disabled={!manualCode.trim()}>Verificar</Button>
                 </div>
-                <Button onClick={startScanner} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" size="lg">
-                  Escanear Código QR
-                </Button>
-                <div className="w-full">
-                  <p className="text-xs text-muted-foreground mb-2 text-center">O ingresa el código manualmente:</p>
-                  <div className="flex gap-2">
-                    <Input
-                      value={manualCode}
-                      onChange={(e) => setManualCode(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && verifyQrCode(manualCode.trim())}
-                      placeholder="Código QR..."
-                      className="font-mono text-sm"
-                    />
-                    <Button variant="outline" onClick={() => verifyQrCode(manualCode.trim())} disabled={!manualCode.trim()}>
-                      Verificar
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* ── SCANNING ── */}
         {step === 'scanning' && (
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <Badge variant="destructive" className="animate-pulse">● Escaneando...</Badge>
-              </div>
+              <Badge variant="destructive" className="animate-pulse mb-3 block w-fit">● Escaneando...</Badge>
               <div id="qr-reader" className="w-full rounded-lg overflow-hidden" />
             </CardContent>
           </Card>
@@ -390,70 +383,78 @@ export default function CheckInPage() {
           </Card>
         )}
 
-        {/* ── VERIFIED ── */}
-        {step === 'verified' && !loadingQr && (
+        {/* ── IDENTIFY ── */}
+        {step === 'identify' && !loadingQr && (
           <>
             <Card className="border-emerald-200">
               <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  <span className="font-semibold text-emerald-700">QR Verificado</span>
+                  <span className="font-semibold text-emerald-700">Sucursal: {branchName}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Sucursal: <strong>{branchName}</strong></p>
               </CardContent>
             </Card>
 
-            {/* Employee selector */}
             <Card>
-              <CardContent className="p-4">
-                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                  <User className="h-4 w-4" /> Selecciona tu nombre
-                </label>
-                <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-                  <SelectTrigger><SelectValue placeholder="— Elige un empleado —" /></SelectTrigger>
-                  <SelectContent>
-                    {employees.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.firstName} {e.lastName} {e.employeeNumber ? `(#${e.employeeNumber})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="font-semibold">Identificación</h3>
+                </div>
+
+                {/* Identifier type tabs */}
+                <div className="grid grid-cols-3 gap-2">
+                  {(['pin', 'email', 'phone'] as IdentifierType[]).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => { setIdentifierType(t); setIdentifierValue('') }}
+                      className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-xs font-medium transition-colors ${
+                        identifierType === t
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-border text-muted-foreground hover:border-emerald-300'
+                      }`}
+                    >
+                      {identifierIcons[t]}
+                      {t === 'pin' ? 'PIN' : t === 'email' ? 'Email' : 'Teléfono'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Input */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">{identifierLabels[identifierType]}</label>
+                  <div className="relative">
+                    <Input
+                      type={identifierType === 'pin' && !showIdentifier ? 'password' : 'text'}
+                      value={identifierValue}
+                      onChange={(e) => setIdentifierValue(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleIdentify()}
+                      placeholder={identifierPlaceholders[identifierType]}
+                      className="pr-10"
+                      autoComplete="off"
+                      inputMode={identifierType === 'pin' ? 'numeric' : 'text'}
+                      maxLength={identifierType === 'pin' ? 6 : undefined}
+                    />
+                    {identifierType === 'pin' && (
+                      <button
+                        type="button"
+                        onClick={() => setShowIdentifier(!showIdentifier)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      >
+                        {showIdentifier ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    )}
+                  </div>
+                  {identifierType === 'pin' && (
+                    <p className="text-xs text-muted-foreground">Tu PIN de 4-6 dígitos asignado por la empresa</p>
+                  )}
+                </div>
+
+                <Button onClick={handleIdentify} disabled={identifyLoading || !identifierValue.trim()} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                  {identifyLoading ? 'Verificando...' : 'Continuar'}
+                </Button>
               </CardContent>
             </Card>
-
-            {/* Record type */}
-            {hasPendingCheckIn && (
-              <Card className="border-amber-200 bg-amber-50">
-                <CardContent className="p-3 text-sm text-amber-800">
-                  ⚠️ Ya tienes una entrada registrada hoy. Se registrará <strong>Salida</strong>.
-                </CardContent>
-              </Card>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant={recordType === 'check_in' ? 'default' : 'outline'}
-                onClick={() => setRecordType('check_in')}
-                className={recordType === 'check_in' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
-                disabled={hasPendingCheckIn}
-              >
-                🟢 Entrada
-              </Button>
-              <Button
-                variant={recordType === 'check_out' ? 'default' : 'outline'}
-                onClick={() => setRecordType('check_out')}
-                className={recordType === 'check_out' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
-              >
-                🔴 Salida
-              </Button>
-            </div>
-            <Button
-              onClick={startSelfieCamera}
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
-              disabled={!selectedEmployeeId}
-            >
-              <Camera className="h-4 w-4 mr-2" /> Continuar — Tomar Foto
-            </Button>
           </>
         )}
 
@@ -461,14 +462,22 @@ export default function CheckInPage() {
         {step === 'selfie' && (
           <Card>
             <CardContent className="p-4 flex flex-col items-center gap-4">
-              <p className="text-sm font-medium">Toma una selfie para confirmar</p>
+              {identifiedEmployee && (
+                <div className="text-center">
+                  <p className="font-semibold">{identifiedEmployee.firstName} {identifiedEmployee.lastName}</p>
+                  <Badge className={recordType === 'check_in' ? 'bg-emerald-100 text-emerald-800 mt-1' : 'bg-red-100 text-red-800 mt-1'}>
+                    {recordType === 'check_in' ? '🟢 Entrada' : '🔴 Salida'}
+                  </Badge>
+                </div>
+              )}
+              <p className="text-sm text-muted-foreground">Toma una selfie para confirmar</p>
               {!selfieData ? (
                 <>
                   <div className="relative w-full max-w-xs aspect-square rounded-full overflow-hidden border-4 border-emerald-400">
                     <video ref={selfieVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
                   </div>
                   <Button onClick={captureSelfie} className="bg-emerald-600 hover:bg-emerald-700">
-                    <Camera className="h-4 w-4 mr-2" /> Capturar
+                    <Camera className="h-4 w-4 mr-2" /> Capturar Foto
                   </Button>
                 </>
               ) : (
@@ -496,11 +505,15 @@ export default function CheckInPage() {
         )}
 
         {/* ── CONFIRM ── */}
-        {step === 'confirm' && (
+        {step === 'confirm' && identifiedEmployee && (
           <Card>
             <CardContent className="p-4 space-y-3">
               <p className="font-semibold">Confirmar Registro</p>
               <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Empleado</span>
+                  <span className="font-medium">{identifiedEmployee.firstName} {identifiedEmployee.lastName}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sucursal</span>
                   <span className="font-medium">{branchName}</span>
@@ -529,11 +542,7 @@ export default function CheckInPage() {
                   </div>
                 )}
               </div>
-              <Button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 mt-2"
-              >
+              <Button onClick={handleSubmit} disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 mt-2">
                 {submitting ? 'Registrando...' : '✓ Confirmar Asistencia'}
               </Button>
             </CardContent>
@@ -552,22 +561,23 @@ export default function CheckInPage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-emerald-700">¡Asistencia Registrada!</h2>
-                <p className="text-sm text-muted-foreground mt-1">{successData.branchName}</p>
+                <p className="text-sm font-medium mt-1">{successData.employeeName}</p>
+                <p className="text-xs text-muted-foreground">{successData.branchName}</p>
               </div>
               <div className="grid grid-cols-3 gap-3 w-full text-sm">
                 <div className="bg-muted rounded-lg p-3 text-center">
                   <Clock className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                  <p className="font-mono font-semibold">{successData.time}</p>
+                  <p className="font-mono font-semibold text-xs">{successData.time}</p>
                   <p className="text-[10px] text-muted-foreground">Hora</p>
                 </div>
-                <div className="bg-muted rounded-lg p-3 text-center">
-                  <Badge className={successData.recordType === 'Entrada' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}>
+                <div className="bg-muted rounded-lg p-3 text-center flex flex-col items-center">
+                  <Badge className={`text-[10px] ${successData.recordType === 'Entrada' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
                     {successData.recordType}
                   </Badge>
                   <p className="text-[10px] text-muted-foreground mt-1">Tipo</p>
                 </div>
-                <div className="bg-muted rounded-lg p-3 text-center">
-                  <Badge className={successData.status === 'A Tiempo' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}>
+                <div className="bg-muted rounded-lg p-3 text-center flex flex-col items-center">
+                  <Badge className={`text-[10px] ${successData.status === 'A Tiempo' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
                     {successData.status}
                   </Badge>
                   <p className="text-[10px] text-muted-foreground mt-1">Estado</p>

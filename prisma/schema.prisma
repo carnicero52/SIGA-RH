@@ -168,6 +168,7 @@ model Employee {
   bankClabe      String?
 
   notes          String?
+  pin            String?  // 4-6 digit PIN for public check-in
   active         Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

@@ -50,6 +50,7 @@ const emptyForm = {
   emergencyContact: '', emergencyPhone: '', emergencyRelation: '',
   bankName: '', bankAccount: '', bankClabe: '',
   notes: '',
+  pin: '',
 }
 
 // ---- Status badge helper ----
@@ -395,6 +396,19 @@ function EmployeeFormDialog({
                   </SelectContent>
                 </Select>
               </div>
+              <Separator />
+              <div className="space-y-2">
+                <Label>PIN de Asistencia</Label>
+                <Input
+                  type="text"
+                  value={form.pin}
+                  onChange={(e) => setForm({ ...form, pin: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                  placeholder="4-6 dígitos"
+                  maxLength={6}
+                  inputMode="numeric"
+                />
+                <p className="text-xs text-muted-foreground">PIN privado para marcar asistencia en el panel público. Solo números, 4-6 dígitos.</p>
+              </div>
             </TabsContent>
 
             {/* Contacto de Emergencia */}
@@ -653,6 +667,7 @@ export function EmployeesView() {
       bankAccount: emp.bankAccount || '',
       bankClabe: emp.bankClabe || '',
       notes: emp.notes || '',
+      pin: (emp as any).pin || '',
     })
     setDialogOpen(true)
   }
