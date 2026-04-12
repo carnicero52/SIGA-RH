@@ -400,7 +400,7 @@ export function QRDisplayView() {
               <div className="absolute top-0 left-0 h-1 w-full bg-emerald-500" />
               <CardContent className="flex flex-col items-center gap-6 p-6 sm:p-10">
                 <QRCodeSVG
-                  value={currentQR.qrUrl || (isClient ? `${window.location.origin}/?qr=${currentQR.code}` : `/?qr=${currentQR.code}`)}
+                  value={currentQR.qrUrl || (isClient ? `${window.location.origin}/checkin?qr=${currentQR.code}` : `/checkin?qr=${currentQR.code}`)}
                   size={isClient && window.innerWidth < 640 ? 280 : 400}
                   bgColor="transparent"
                   fgColor="#059669"

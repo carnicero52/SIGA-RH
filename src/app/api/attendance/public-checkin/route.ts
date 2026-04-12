@@ -95,7 +95,68 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 5. Geofence check
+    // 5. Validate shift schedule — only allow check-in/out within allowed window
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+
+    const employeeShiftForValidation = await db.employeeShift.findFirst({
+      where: {
+        employeeId,
+        active: true,
+        effectiveDate: { lte: todayStr },
+        OR: [{ endDate: null }, { endDate: { gte: todayStr } }],
+      },
+      include: { shift: true },
+      orderBy: { effectiveDate: 'desc' },
+      take: 1,
+    })
+
+    if (employeeShiftForValidation) {
+      const shift = employeeShiftForValidation.shift
+      const shiftStartMinutes = timeToMinutes(shift.startTime)
+      const shiftEndMinutes = timeToMinutes(shift.endTime)
+      const tolerance = shift.toleranceMinutes ?? 15
+      // Allow check_in from 60 min before shift start up to shift end
+      const checkInWindowStart = shiftStartMinutes - 60
+      const checkInWindowEnd = shiftEndMinutes
+      // Allow check_out from (shift end - 60 min) to (shift end + 120 min)
+      const checkOutWindowStart = shiftEndMinutes - 60
+      const checkOutWindowEnd = shiftEndMinutes + 120
+
+      if (recordType === 'check_in') {
+        if (currentMinutes < checkInWindowStart) {
+          const diffMin = checkInWindowStart - currentMinutes
+          return NextResponse.json(
+            { error: `Aún no es hora de marcar entrada. Tu turno inicia a las ${shift.startTime}. Faltan ${diffMin} minutos.` },
+            { status: 400 }
+          )
+        }
+        if (currentMinutes > checkInWindowEnd + tolerance) {
+          return NextResponse.json(
+            { error: `El período de entrada ya cerró. Tu turno era de ${shift.startTime} a ${shift.endTime}.` },
+            { status: 400 }
+          )
+        }
+      } else if (recordType === 'check_out') {
+        if (currentMinutes < checkOutWindowStart) {
+          const diffMin = checkOutWindowStart - currentMinutes
+          return NextResponse.json(
+            { error: `Aún no es hora de marcar salida. Tu turno termina a las ${shift.endTime}. Faltan ${diffMin} minutos.` },
+            { status: 400 }
+          )
+        }
+        if (currentMinutes > checkOutWindowEnd) {
+          return NextResponse.json(
+            { error: `El período de salida ya cerró. Contacta a tu supervisor.` },
+            { status: 400 }
+          )
+        }
+      }
+    }
+    // If no shift assigned, allow check-in (admin can configure shift later)
+
+    // 6. Geofence check
     const fraudFlags: string[] = []
 
     if (latitude != null && longitude != null) {
@@ -181,25 +242,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 6. Determine status based on shift
-    const now = new Date()
-    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+    // 7. Determine status based on shift (reuse already-fetched shift)
     let status = 'on_time'
     let scheduledTime: Date | null = null
     let minutesDiff: number | null = null
 
-    const todayStr = now.toISOString().split('T')[0]
-    const employeeShift = await db.employeeShift.findFirst({
-      where: {
-        employeeId,
-        active: true,
-        effectiveDate: { lte: todayStr },
-        OR: [{ endDate: null }, { endDate: { gte: todayStr } }],
-      },
-      include: { shift: true },
-      orderBy: { effectiveDate: 'desc' },
-      take: 1,
-    })
+    const employeeShift = employeeShiftForValidation
 
     if (employeeShift) {
       const shift = employeeShift.shift
