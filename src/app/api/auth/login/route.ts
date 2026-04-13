@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     const user = await db.user.findFirst({
       where: { email: normalizedEmail, active: true },
-      include: { company: { select: { name: true, logo: true } } },
+      include: { company: { select: { name: true, logo: true, slogan: true } } },
     })
 
     if (!user) {
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
         role: user.role,
         companyName: user.company.name,
         companyLogo: user.company.logo,
+        companySlogan: user.company.slogan,
       },
     })
   } catch (error: any) {

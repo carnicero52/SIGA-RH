@@ -54,6 +54,7 @@ interface AppState {
   // Company
   companyName: string
   companyLogo: string
+  companySlogan: string
   setCompany: (name: string, logo?: string) => void
 }
 
@@ -68,7 +69,7 @@ export const useAppStore = create<AppState>()(
         localStorage.removeItem('siga_token')
         // Clear persisted state
         useAppStore.persist.clearStorage()
-        set({ user: null, isAuthenticated: false, currentView: 'landing', companyName: 'SIGA-RH', companyLogo: '' })
+        set({ user: null, isAuthenticated: false, currentView: 'landing', companyName: 'SIGA-RH', companyLogo: '', companySlogan: '' })
       },
 
       // Navigation
@@ -84,6 +85,7 @@ export const useAppStore = create<AppState>()(
       // Company
       companyName: 'SIGA-RH',
       companyLogo: '',
+      companySlogan: '',
       setCompany: (name, logo = '') => set({ companyName: name, companyLogo: logo }),
     }),
     {
@@ -94,6 +96,7 @@ export const useAppStore = create<AppState>()(
         isAuthenticated: state.isAuthenticated,
         companyName: state.companyName,
         companyLogo: state.companyLogo,
+        companySlogan: state.companySlogan,
         currentView: state.currentView,
       }),
     }

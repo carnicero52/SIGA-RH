@@ -81,7 +81,7 @@ const navGroups: NavGroup[] = [
 ]
 
 export function AppSidebar() {
-  const { currentView, navigate, sidebarOpen, setSidebarOpen, user, companyName, logout } = useAppStore()
+  const { currentView, navigate, sidebarOpen, setSidebarOpen, user, companyName, companyLogo, companySlogan, logout } = useAppStore()
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   useEffect(() => {
@@ -120,11 +120,15 @@ export function AppSidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary/10 overflow-hidden">
-            <img src="/logo.png" alt="SIGA-RH" className="h-7 w-7 object-contain" />
+            {companyLogo ? (
+              <img src={companyLogo} alt={companyName} className="h-7 w-7 object-contain" />
+            ) : (
+              <img src="/logo.png" alt="SIGA-RH" className="h-7 w-7 object-contain" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-bold tracking-tight truncate">{companyName}</h1>
-            <p className="text-[10px] text-sidebar-foreground/60 truncate">Gestión de RH</p>
+            <p className="text-[10px] text-sidebar-foreground/60 truncate">{companySlogan || 'Gestión de RH'}</p>
           </div>
         </div>
 
