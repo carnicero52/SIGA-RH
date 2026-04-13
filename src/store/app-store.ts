@@ -55,7 +55,7 @@ interface AppState {
   companyName: string
   companyLogo: string
   companySlogan: string
-  setCompany: (name: string, logo?: string) => void
+  setCompany: (name: string, logo?: string, slogan?: string) => void
 }
 
 export const useAppStore = create<AppState>()(
