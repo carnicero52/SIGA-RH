@@ -193,6 +193,10 @@ export function DashboardView() {
     }
   }, [])
 
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
+
   return (
     <div className="space-y-6">
       {/* Page subtitle */}
