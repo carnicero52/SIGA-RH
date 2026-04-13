@@ -1,11 +1,13 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
-    const period = await db.payrollPeriod.findUnique({
-      where: { id },
+    const period = await db.payrollPeriod.findFirst({
+      where: { id, companyId },
       include: {
         items: {
           include: {
@@ -31,11 +33,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
 
+    const existing = await db.payrollPeriod.findFirst({ where: { id, companyId } })
+    if (!existing) return NextResponse.json({ error: 'Período no encontrado' }, { status: 404 })
+
     const period = await db.payrollPeriod.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         ...(body.status !== undefined && { status: body.status }),
         ...(body.notes !== undefined && { notes: body.notes }),
@@ -51,8 +57,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
-    await db.payrollPeriod.delete({ where: { id } })
+
+    const existing = await db.payrollPeriod.findFirst({ where: { id, companyId } })
+    if (!existing) return NextResponse.json({ error: 'Período no encontrado' }, { status: 404 })
+
+    await db.payrollPeriod.delete({ where: { id: existing.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: 'Error al eliminar período' }, { status: 500 })

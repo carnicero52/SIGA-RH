@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -6,10 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
 
-    const employee = await db.employee.findUnique({
-      where: { id },
+    const employee = await db.employee.findFirst({
+      where: { id, companyId },
       include: {
         branch: { select: { id: true, name: true } },
         department: { select: { id: true, name: true } },
@@ -35,7 +37,7 @@ export async function GET(
 
     // Fetch attendance records separately for performance
     const attendanceRecords = await db.attendanceRecord.findMany({
-      where: { employeeId: id },
+      where: { employeeId: id, companyId },
       include: {
         branch: { select: { name: true } },
       },
@@ -55,10 +57,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
 
-    const existing = await db.employee.findUnique({ where: { id } })
+    const existing = await db.employee.findFirst({ where: { id, companyId } })
     if (!existing) {
       return NextResponse.json({ error: 'Empleado no encontrado' }, { status: 404 })
     }
@@ -107,7 +110,7 @@ export async function PUT(
     }
 
     const employee = await db.employee.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         ...(firstName !== undefined && { firstName: firstName.trim() }),
         ...(lastName !== undefined && { lastName: lastName.trim() }),
@@ -157,16 +160,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
 
-    const existing = await db.employee.findUnique({ where: { id } })
+    const existing = await db.employee.findFirst({ where: { id, companyId } })
     if (!existing) {
       return NextResponse.json({ error: 'Empleado no encontrado' }, { status: 404 })
     }
 
     // Soft delete
     await db.employee.update({
-      where: { id },
+      where: { id: existing.id },
       data: { active: false },
     })
 

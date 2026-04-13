@@ -3,15 +3,21 @@ import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * GET /api/public/vacancies?companyId=xxx
- * Returns open vacancies for public job board (no auth required)
+ * Returns open vacancies for a single company public job board (no auth required)
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const companyId = searchParams.get('companyId')
 
-    const where: any = { status: 'open' }
-    if (companyId) where.companyId = companyId
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'El parámetro companyId es requerido' },
+        { status: 400 }
+      )
+    }
+
+    const where: any = { status: 'open', companyId }
 
     const vacancies = await db.vacant.findMany({
       where,

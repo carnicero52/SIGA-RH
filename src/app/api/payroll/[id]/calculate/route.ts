@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 const LATE_TOLERANCE_MINUTES = 15
@@ -28,14 +29,12 @@ function periodDays(startDate: string, endDate: string): number {
  */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
 
-    const period = await db.payrollPeriod.findUnique({ where: { id } })
+    const period = await db.payrollPeriod.findFirst({ where: { id, companyId } })
     if (!period) return NextResponse.json({ error: 'Período no encontrado' }, { status: 404 })
     if (period.status === 'paid') return NextResponse.json({ error: 'Este período ya fue pagado' }, { status: 400 })
-
-    const company = await db.company.findUnique({ where: { id: period.companyId } })
-    if (!company) return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 })
 
     // Get active employees with position info
     const employees = await db.employee.findMany({

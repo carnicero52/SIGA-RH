@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -6,9 +7,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
-    const position = await db.position.findUnique({
-      where: { id },
+    const position = await db.position.findFirst({
+      where: { id, companyId },
       include: {
         department: {
           select: { id: true, name: true },
@@ -35,12 +37,18 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
     const { departmentId, name, description, salary } = body
 
+    const existing = await db.position.findFirst({ where: { id, companyId } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Puesto no encontrado' }, { status: 404 })
+    }
+
     const position = await db.position.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         ...(departmentId !== undefined && { departmentId }),
         ...(name !== undefined && { name }),
@@ -71,9 +79,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
+    const existing = await db.position.findFirst({ where: { id, companyId } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Puesto no encontrado' }, { status: 404 })
+    }
+
     const position = await db.position.update({
-      where: { id },
+      where: { id: existing.id },
       data: { active: false },
     })
     return NextResponse.json(position)

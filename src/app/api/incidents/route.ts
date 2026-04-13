@@ -1,15 +1,18 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const severity = searchParams.get('severity')
     const type = searchParams.get('type')
     const employeeId = searchParams.get('employeeId')
 
-    const where: Record<string, unknown> = {}
+    const where: Record<string, unknown> = { companyId }
     if (status) where.status = status
     if (severity) where.severity = severity
     if (type) where.type = type
@@ -39,9 +42,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const body = await request.json()
     const {
-      companyId,
       employeeId,
       reportedBy,
       type,
@@ -53,9 +57,9 @@ export async function POST(request: NextRequest) {
       sanctions,
     } = body
 
-    if (!companyId || !employeeId || !type || !title || !description || !severity || !date) {
+    if (!employeeId || !type || !title || !description || !severity || !date) {
       return NextResponse.json(
-        { error: 'companyId, employeeId, type, title, description, severity y date son requeridos' },
+        { error: 'employeeId, type, title, description, severity y date son requeridos' },
         { status: 400 }
       )
     }

@@ -1,8 +1,10 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function PUT(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
     const body = await request.json()
     const { id, verifiedBy } = body
 
@@ -10,7 +12,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID del registro es requerido' }, { status: 400 })
     }
 
-    const record = await db.attendanceRecord.findUnique({ where: { id } })
+    const record = await db.attendanceRecord.findFirst({ where: { id, companyId } })
     if (!record) {
       return NextResponse.json({ error: 'Registro no encontrado' }, { status: 404 })
     }
@@ -18,7 +20,7 @@ export async function PUT(request: NextRequest) {
     const newVerified = !record.verified
 
     const updated = await db.attendanceRecord.update({
-      where: { id },
+      where: { id: record.id },
       data: {
         verified: newVerified,
         verifiedBy: newVerified ? (verifiedBy || 'admin') : null,

@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const { companyId } = getAuthPayload(request)
 
     const company = await db.company.findFirst({
-      where: { active: true },
-      orderBy: { createdAt: 'asc' },
+      where: { id: companyId, active: true },
     })
 
     if (!company) {

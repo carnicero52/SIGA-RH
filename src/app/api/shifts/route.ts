@@ -1,10 +1,13 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const shifts = await db.shift.findMany({
-      where: { active: true },
+      where: { active: true, companyId },
       include: {
         _count: { select: { employeeShifts: true } },
       },
@@ -20,6 +23,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
     const body = await request.json()
     const { name, startTime, endTime, breakMinutes, toleranceMinutes, type, color } = body
 
@@ -39,7 +43,7 @@ export async function POST(request: NextRequest) {
         toleranceMinutes: toleranceMinutes ?? 15,
         type: type ?? 'fixed',
         color: color ?? '#10b981',
-        companyId: 'default',
+        companyId,
       },
       include: {
         _count: { select: { employeeShifts: true } },

@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -6,10 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
 
-    const contract = await db.contract.findUnique({
-      where: { id },
+    const contract = await db.contract.findFirst({
+      where: { id, companyId },
       include: {
         template: {
           select: { id: true, name: true, type: true, content: true },
@@ -41,10 +43,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
 
-    const contract = await db.contract.findUnique({ where: { id } })
+    const contract = await db.contract.findFirst({ where: { id, companyId } })
     if (!contract) {
       return NextResponse.json({ error: 'Contrato no encontrado' }, { status: 404 })
     }
@@ -64,7 +67,7 @@ export async function PUT(
     }
 
     const updated = await db.contract.update({
-      where: { id },
+      where: { id: contract.id },
       data: updateData,
       include: {
         template: {
@@ -93,14 +96,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
 
-    const contract = await db.contract.findUnique({ where: { id } })
+    const contract = await db.contract.findFirst({ where: { id, companyId } })
     if (!contract) {
       return NextResponse.json({ error: 'Contrato no encontrado' }, { status: 404 })
     }
 
-    await db.contract.delete({ where: { id } })
+    await db.contract.delete({ where: { id: contract.id } })
 
     return NextResponse.json({ message: 'Contrato eliminado' })
   } catch (error: any) {

@@ -88,6 +88,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (employee.companyId !== branch.companyId) {
+      return NextResponse.json(
+        { error: 'Empleado no pertenece a la empresa del QR' },
+        { status: 403 }
+      )
+    }
+
     // 4. Geofence check
     const fraudFlags: string[] = []
 

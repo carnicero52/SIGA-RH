@@ -1,10 +1,13 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const departments = await db.department.findMany({
-      where: { active: true },
+      where: { active: true, companyId },
       include: {
         _count: {
           select: { employees: true, positions: true },
@@ -21,10 +24,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
     const body = await request.json()
-    const { companyId, name, description, managerName } = body
+    const { name, description, managerName } = body
 
-    if (!companyId || !name) {
+    if (!name) {
       return NextResponse.json({ error: 'El nombre y la empresa son requeridos' }, { status: 400 })
     }
 

@@ -81,7 +81,7 @@ export function ShiftsView() {
   const fetchShifts = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/shifts')
+      const res = await fetch('/api/shifts', { headers: authHeaders() })
       if (!res.ok) throw new Error('Error al cargar turnos')
       const data = await res.json()
       setShifts(data)
@@ -94,7 +94,7 @@ export function ShiftsView() {
 
   const fetchEmployees = useCallback(async () => {
     try {
-      const res = await fetch('/api/employees')
+      const res = await fetch('/api/employees', { headers: authHeaders() })
       if (!res.ok) return
       const data = await res.json()
       setEmployees(Array.isArray(data) ? data : data.employees || [])
@@ -139,7 +139,7 @@ export function ShiftsView() {
       const method = editingShift ? 'PUT' : 'POST'
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
       if (!res.ok) {
@@ -159,7 +159,10 @@ export function ShiftsView() {
   const handleDelete = async () => {
     if (!deletingShift) return
     try {
-      const res = await fetch(`/api/shifts/${deletingShift.id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/shifts/${deletingShift.id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Error al eliminar turno')
@@ -181,7 +184,7 @@ export function ShiftsView() {
       setAssignSaving(true)
       const res = await fetch('/api/shifts/assign', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           employeeId: assignEmployeeId,
           shiftId: assignShiftId,

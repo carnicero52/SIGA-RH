@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -17,9 +18,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
-    const candidate = await db.candidate.findUnique({
-      where: { id },
+    const candidate = await db.candidate.findFirst({
+      where: { id, companyId },
       include: { vacant: { select: { id: true, title: true } } },
     })
     if (!candidate) return NextResponse.json({ error: 'Candidato no encontrado' }, { status: 404 })
@@ -34,17 +36,18 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
 
-    const existing = await db.candidate.findUnique({
-      where: { id },
+    const existing = await db.candidate.findFirst({
+      where: { id, companyId },
       include: { vacant: { select: { id: true, title: true } } },
     })
     if (!existing) return NextResponse.json({ error: 'Candidato no encontrado' }, { status: 404 })
 
     const candidate = await db.candidate.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         ...(body.firstName !== undefined && { firstName: body.firstName }),
         ...(body.lastName !== undefined && { lastName: body.lastName }),
@@ -87,10 +90,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
-    const existing = await db.candidate.findUnique({ where: { id } })
+    const existing = await db.candidate.findFirst({ where: { id, companyId } })
     if (!existing) return NextResponse.json({ error: 'Candidato no encontrado' }, { status: 404 })
-    await db.candidate.delete({ where: { id } })
+    await db.candidate.delete({ where: { id: existing.id } })
     return NextResponse.json({ success: true })
   } catch (error: any) {
     return NextResponse.json({ error: 'Error al eliminar candidato' }, { status: 500 })

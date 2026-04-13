@@ -66,7 +66,9 @@ export const useAppStore = create<AppState>()(
       login: (user) => set({ user, isAuthenticated: true, currentView: 'dashboard' }),
       logout: () => {
         localStorage.removeItem('siga_token')
-        set({ user: null, isAuthenticated: false, currentView: 'landing' })
+        // Clear persisted state
+        useAppStore.persist.clearStorage()
+        set({ user: null, isAuthenticated: false, currentView: 'landing', companyName: 'SIGA-RH', companyLogo: '' })
       },
 
       // Navigation

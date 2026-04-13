@@ -11,8 +11,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email y contraseña son requeridos' }, { status: 400 })
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase()
+
     const user = await db.user.findFirst({
-      where: { email, active: true },
+      where: { email: normalizedEmail, active: true },
       include: { company: { select: { name: true, logo: true } } },
     })
 

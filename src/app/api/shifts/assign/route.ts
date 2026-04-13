@@ -1,8 +1,10 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
     const body = await request.json()
     const { employeeId, shiftId, effectiveDate, endDate, daysOfWeek } = body
 
@@ -14,12 +16,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if employee and shift exist
-    const employee = await db.employee.findUnique({ where: { id: employeeId } })
+    const employee = await db.employee.findFirst({ where: { id: employeeId, companyId } })
     if (!employee) {
       return NextResponse.json({ error: 'Empleado no encontrado' }, { status: 404 })
     }
 
-    const shift = await db.shift.findUnique({ where: { id: shiftId } })
+    const shift = await db.shift.findFirst({ where: { id: shiftId, companyId } })
     if (!shift) {
       return NextResponse.json({ error: 'Turno no encontrado' }, { status: 404 })
     }
@@ -53,6 +55,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const employeeId = searchParams.get('employeeId')
     const shiftId = searchParams.get('shiftId')
@@ -65,7 +69,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db.employeeShift.updateMany({
-      where: { employeeId, shiftId, active: true },
+      where: {
+        employeeId,
+        shiftId,
+        active: true,
+        employee: { companyId },
+        shift: { companyId },
+      },
       data: { active: false },
     })
 

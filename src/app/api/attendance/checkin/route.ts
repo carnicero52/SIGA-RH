@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000
@@ -21,16 +21,7 @@ function timeToMinutes(timeStr: string): number {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Validate auth
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-    const token = authHeader.split(' ')[1]
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'siga-rh-secret-key-2024')
-    const { payload } = await jwtVerify(token, secret)
-
-    const userId = payload.userId as string
+    const { companyId } = getAuthPayload(request)
 
     // Parse request body
     const body = await request.json()
@@ -66,6 +57,7 @@ export async function POST(request: NextRequest) {
         id: qrCodeId,
         active: true,
         expiresAt: { gt: new Date() },
+        branch: { companyId },
       },
     })
 
@@ -77,8 +69,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Validate employee
-    const employee = await db.employee.findUnique({
-      where: { id: employeeId },
+    const employee = await db.employee.findFirst({
+      where: { id: employeeId, companyId },
     })
 
     if (!employee || !employee.active) {
@@ -89,8 +81,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Get branch from QR
-    const branch = await db.branch.findUnique({
-      where: { id: qrCode.branchId },
+    const branch = await db.branch.findFirst({
+      where: { id: qrCode.branchId, companyId },
     })
 
     if (!branch) {

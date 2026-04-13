@@ -1,8 +1,11 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -13,7 +16,7 @@ export async function GET(request: NextRequest) {
     const recordType = searchParams.get('recordType')
     const status = searchParams.get('status')
 
-    const where: any = {}
+    const where: any = { companyId }
 
     if (dateFrom || dateTo) {
       where.recordTime = {}

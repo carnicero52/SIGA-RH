@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -6,9 +7,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
-    const branch = await db.branch.findUnique({
-      where: { id },
+    const branch = await db.branch.findFirst({
+      where: { id, companyId },
       include: {
         _count: {
           select: { employees: true, attendanceRecords: true },
@@ -32,12 +34,18 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
     const { name, code, address, city, state, latitude, longitude, geofenceRadius, phone, managerName } = body
 
+    const existing = await db.branch.findFirst({ where: { id, companyId } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Sucursal no encontrada' }, { status: 404 })
+    }
+
     const branch = await db.branch.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         ...(name !== undefined && { name }),
         ...(code !== undefined && { code: code || null }),
@@ -64,9 +72,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
+    const existing = await db.branch.findFirst({ where: { id, companyId } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Sucursal no encontrada' }, { status: 404 })
+    }
+
     const branch = await db.branch.update({
-      where: { id },
+      where: { id: existing.id },
       data: { active: false },
     })
     return NextResponse.json(branch)

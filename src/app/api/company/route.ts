@@ -1,10 +1,13 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const company = await db.company.findFirst({
-      orderBy: { createdAt: 'asc' },
+    const { companyId } = getAuthPayload(request)
+
+    const company = await db.company.findUnique({
+      where: { id: companyId },
     })
 
     if (!company) {
@@ -20,20 +23,16 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
     const body = await request.json()
-    const { id } = body
 
-    if (!id) {
-      return NextResponse.json({ error: 'ID de empresa requerido' }, { status: 400 })
-    }
-
-    const existing = await db.company.findUnique({ where: { id } })
+    const existing = await db.company.findUnique({ where: { id: companyId } })
     if (!existing) {
       return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 })
     }
 
     const company = await db.company.update({
-      where: { id },
+      where: { id: companyId },
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.taxId !== undefined && { taxId: body.taxId || null }),

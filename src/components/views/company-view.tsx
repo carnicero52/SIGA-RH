@@ -44,7 +44,7 @@ export function CompanyView() {
   const fetchCompany = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/company')
+      const res = await fetch('/api/company', { headers: authHeaders() })
       if (!res.ok) throw new Error('Error al cargar empresa')
       const data = await res.json()
       setCompany(data)
@@ -106,7 +106,7 @@ export function CompanyView() {
       const res = await fetch('/api/company', {
         method: 'PUT',
         headers: authHeaders(),
-        body: JSON.stringify({ id: company.id, ...form }),
+        body: JSON.stringify({ ...form }),
       })
       if (!res.ok) {
         const data = await res.json()

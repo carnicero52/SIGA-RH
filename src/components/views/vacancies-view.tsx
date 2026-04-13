@@ -72,15 +72,11 @@ export function VacanciesView() {
   const [qrModalOpen, setQrModalOpen] = useState(false)
   const [qrVacancy, setQrVacancy] = useState<Vacant | null>(null)
 
-  const companyId = typeof window !== 'undefined'
-    ? JSON.parse(localStorage.getItem('siga_user') || '{}').companyId
-    : ''
-
   const fetchVacancies = useCallback(async () => {
     try {
       setLoading(true)
       const url = statusFilter === 'all' ? '/api/vacancies' : `/api/vacancies?status=${statusFilter}`
-      const res = await fetch(url)
+      const res = await fetch(url, { headers: authHeaders() })
       if (!res.ok) throw new Error('Error al cargar vacantes')
       const data = await res.json()
       setVacancies(data)

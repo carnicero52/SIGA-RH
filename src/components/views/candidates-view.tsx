@@ -108,7 +108,7 @@ export function CandidatesView() {
     try {
       setLoading(true)
       const url = vacantFilter === 'all' ? '/api/candidates' : `/api/candidates?vacantId=${vacantFilter}`
-      const res = await fetch(url)
+      const res = await fetch(url, { headers: authHeaders() })
       if (!res.ok) throw new Error('Error al cargar candidatos')
       setCandidates(await res.json())
     } catch (error: any) {
@@ -120,7 +120,7 @@ export function CandidatesView() {
 
   const fetchVacancies = useCallback(async () => {
     try {
-      const res = await fetch('/api/vacancies')
+      const res = await fetch('/api/vacancies', { headers: authHeaders() })
       if (res.ok) setVacancies(await res.json())
     } catch {}
   }, [])
@@ -178,7 +178,7 @@ export function CandidatesView() {
       const res = await fetch('/api/candidates', {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ ...form, companyId }),
+        body: JSON.stringify({ ...form }),
       })
       if (!res.ok) {
         const data = await res.json()

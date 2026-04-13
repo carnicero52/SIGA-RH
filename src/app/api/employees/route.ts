@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 
@@ -48,6 +49,8 @@ async function sendPinEmail(
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10')))
@@ -57,7 +60,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || ''
     const employmentType = searchParams.get('employmentType') || ''
 
-    const where: any = { active: true }
+    const where: any = { active: true, companyId }
 
     if (search) {
       where.OR = [
@@ -109,6 +112,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const body = await request.json()
     const {
       firstName, lastName, email, phone,
@@ -133,14 +138,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'El email es requerido' }, { status: 400 })
     }
 
-    // Check unique email - find first active company
-    const firstCompany = await db.company.findFirst({ where: { active: true } })
-    if (!firstCompany) {
+    // Check unique email - current company only
+    const company = await db.company.findUnique({ where: { id: companyId } })
+    if (!company) {
       return NextResponse.json({ error: 'No hay empresa configurada' }, { status: 400 })
     }
 
     // Check plan status
-    if (firstCompany.planStatus === 'suspended') {
+    if (company.planStatus === 'suspended') {
       return NextResponse.json(
         { error: 'Tu cuenta está suspendida. Contacta a soporte para reactivarla.' },
         { status: 403 }
@@ -149,16 +154,16 @@ export async function POST(request: NextRequest) {
 
     // Check employee limit
     const currentCount = await db.employee.count({
-      where: { companyId: firstCompany.id, active: true },
+      where: { companyId, active: true },
     })
-    if (currentCount >= firstCompany.maxEmployees) {
+    if (currentCount >= company.maxEmployees) {
       return NextResponse.json(
         {
-          error: `Límite de empleados alcanzado (${firstCompany.maxEmployees} en plan ${firstCompany.plan}). Actualiza tu plan para agregar más.`,
+          error: `Límite de empleados alcanzado (${company.maxEmployees} en plan ${company.plan}). Actualiza tu plan para agregar más.`,
           limitReached: true,
           currentCount,
-          maxEmployees: firstCompany.maxEmployees,
-          plan: firstCompany.plan,
+          maxEmployees: company.maxEmployees,
+          plan: company.plan,
         },
         { status: 403 }
       )
@@ -168,7 +173,7 @@ export async function POST(request: NextRequest) {
     const autoPin = body.pin?.trim() || generatePin()
 
     const existingEmail = await db.employee.findFirst({
-      where: { companyId: firstCompany.id, email: email.trim(), active: true },
+      where: { companyId, email: email.trim(), active: true },
     })
     if (existingEmail) {
       return NextResponse.json({ error: 'Ya existe un empleado con este email' }, { status: 409 })
@@ -177,7 +182,7 @@ export async function POST(request: NextRequest) {
     // Check unique employeeNumber
     if (employeeNumber?.trim()) {
       const existingNumber = await db.employee.findFirst({
-        where: { companyId: firstCompany.id, employeeNumber: employeeNumber.trim(), active: true },
+        where: { companyId, employeeNumber: employeeNumber.trim(), active: true },
       })
       if (existingNumber) {
         return NextResponse.json({ error: 'Ya existe un empleado con este número de empleado' }, { status: 409 })
@@ -186,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     const employee = await db.employee.create({
       data: {
-        companyId: firstCompany.id,
+        companyId,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
@@ -228,7 +233,7 @@ export async function POST(request: NextRequest) {
       employee.email,
       `${employee.firstName} ${employee.lastName}`,
       autoPin,
-      firstCompany
+      company
     )
 
     return NextResponse.json({ ...employee, pinEmailSent: emailSent }, { status: 201 })

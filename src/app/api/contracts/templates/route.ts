@@ -1,9 +1,13 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const templates = await db.contractTemplate.findMany({
+      where: { companyId },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -21,12 +25,14 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { companyId, name, type, content, defaultDurationDays } = body
+    const { companyId } = getAuthPayload(request)
 
-    if (!companyId || !name || !type || !content) {
+    const body = await request.json()
+    const { name, type, content, defaultDurationDays } = body
+
+    if (!name || !type || !content) {
       return NextResponse.json(
-        { error: 'companyId, name, type y content son requeridos' },
+        { error: 'name, type y content son requeridos' },
         { status: 400 }
       )
     }

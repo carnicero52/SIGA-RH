@@ -29,9 +29,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Build the where clause based on identifier type
+    const branch = await db.branch.findFirst({ where: { id: branchId, active: true } })
+    if (!branch) {
+      return NextResponse.json({ error: 'Sucursal no encontrada' }, { status: 404 })
+    }
+
     const where: any = {
       active: true,
       branchId,
+      companyId: branch.companyId,
     }
 
     if (type === 'pin') {

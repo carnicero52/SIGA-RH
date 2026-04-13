@@ -1,15 +1,21 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * GET /api/public/company-info
  * Returns basic company info for the public job board
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const companyId = searchParams.get('companyId')
+
+    if (!companyId) {
+      return NextResponse.json({ error: 'El parámetro companyId es requerido' }, { status: 400 })
+    }
+
     const company = await db.company.findFirst({
-      where: { active: true },
-      orderBy: { createdAt: 'asc' },
+      where: { id: companyId, active: true },
       select: { id: true, name: true, slogan: true, logo: true, brandColor: true },
     })
 

@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Validate employee exists and is active
-    const employee = await db.employee.findUnique({
-      where: { id: employeeId },
+    const employee = await db.employee.findFirst({
+      where: { id: employeeId, companyId: qrCode.branch.companyId },
     })
 
     if (!employee || !employee.active) {
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Get branch from QR code
-    const branch = await db.branch.findUnique({
-      where: { id: qrCode.branchId },
+    const branch = await db.branch.findFirst({
+      where: { id: qrCode.branchId, companyId: qrCode.branch.companyId },
     })
 
     if (!branch) {

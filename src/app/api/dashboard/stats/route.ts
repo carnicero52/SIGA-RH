@@ -1,20 +1,24 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { getAuthPayload } from '@/lib/server-auth'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const now = new Date()
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
     const isWeekday = now.getDay() !== 0 && now.getDay() !== 6
 
     // --- Employee counts ---
-    const totalEmployees = await db.employee.count({ where: { active: true } })
+    const totalEmployees = await db.employee.count({ where: { active: true, companyId } })
     const activeEmployees = totalEmployees
 
     // Present today = employees with check_in today
     const presentTodayRecords = await db.attendanceRecord.findMany({
       where: {
+        companyId,
         recordType: 'check_in',
         recordTime: { gte: todayStart, lt: todayEnd },
       },
@@ -33,7 +37,7 @@ export async function GET() {
     let absentToday = 0
     if (isWeekday) {
       const allActiveEmployeeIds = await db.employee.findMany({
-        where: { active: true, status: 'active' },
+        where: { active: true, status: 'active', companyId },
         select: { id: true },
       })
       absentToday = allActiveEmployeeIds.filter(
@@ -42,15 +46,15 @@ export async function GET() {
     }
 
     // --- Organization counts ---
-    const totalBranches = await db.branch.count({ where: { active: true } })
-    const totalDepartments = await db.department.count({ where: { active: true } })
+    const totalBranches = await db.branch.count({ where: { active: true, companyId } })
+    const totalDepartments = await db.department.count({ where: { active: true, companyId } })
 
     // --- Incidents, vacancies, contracts ---
     const openIncidents = await db.incident.count({
-      where: { status: { in: ['open', 'under_review'] } },
+      where: { companyId, status: { in: ['open', 'under_review'] } },
     })
-    const openVacancies = await db.vacant.count({ where: { status: 'open' } })
-    const pendingContracts = await db.contract.count({ where: { status: 'active' } })
+    const openVacancies = await db.vacant.count({ where: { companyId, status: 'open' } })
+    const pendingContracts = await db.contract.count({ where: { companyId, status: 'active' } })
 
     // --- Attendance by day (last 7 days) ---
     const attendanceByDay: { date: string; present: number; late: number; absent: number }[] = []
@@ -71,6 +75,7 @@ export async function GET() {
 
       const dayRecords = await db.attendanceRecord.findMany({
         where: {
+          companyId,
           recordType: 'check_in',
           recordTime: { gte: dayStart, lt: dayEnd },
         },
@@ -84,6 +89,7 @@ export async function GET() {
         where: {
           active: true,
           status: 'active',
+          companyId,
           id: { notIn: Array.from(dayPresent) },
         },
       })
@@ -100,6 +106,7 @@ export async function GET() {
     const todayRecordsByBranch = await db.attendanceRecord.groupBy({
       by: ['branchId'],
       where: {
+        companyId,
         recordType: 'check_in',
         recordTime: { gte: todayStart, lt: todayEnd },
       },
@@ -107,7 +114,7 @@ export async function GET() {
     })
 
     const branchNames = await db.branch.findMany({
-      where: { active: true },
+      where: { active: true, companyId },
       select: { id: true, name: true },
     })
 
@@ -119,12 +126,12 @@ export async function GET() {
     // --- Employees by department ---
     const employeesByDepartmentRaw = await db.employee.groupBy({
       by: ['departmentId'],
-      where: { active: true, departmentId: { not: null } },
+      where: { active: true, companyId, departmentId: { not: null } },
       _count: { id: true },
     })
 
     const deptNames = await db.department.findMany({
-      where: { active: true },
+      where: { active: true, companyId },
       select: { id: true, name: true },
     })
 
@@ -136,7 +143,7 @@ export async function GET() {
     // --- Employees by status ---
     const employeesByStatusRaw = await db.employee.groupBy({
       by: ['status'],
-      where: { active: true },
+      where: { active: true, companyId },
       _count: { id: true },
     })
 
@@ -147,7 +154,7 @@ export async function GET() {
 
     // --- Recent attendance (last 10) ---
     const recentAttendance = await db.attendanceRecord.findMany({
-      where: { recordType: 'check_in' },
+      where: { companyId, recordType: 'check_in' },
       orderBy: { recordTime: 'desc' },
       take: 10,
       include: {
@@ -158,7 +165,7 @@ export async function GET() {
 
     // --- Upcoming birthdays (next 30 days) ---
     const allEmployees = await db.employee.findMany({
-      where: { active: true, birthDate: { not: null } },
+      where: { active: true, companyId, birthDate: { not: null } },
       select: { firstName: true, lastName: true, birthDate: true },
     })
 

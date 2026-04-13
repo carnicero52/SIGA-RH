@@ -1,14 +1,18 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const departmentId = searchParams.get('departmentId')
 
     const positions = await db.position.findMany({
       where: {
         active: true,
+        companyId,
         ...(departmentId && { departmentId }),
       },
       include: {
@@ -30,10 +34,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
     const body = await request.json()
-    const { companyId, departmentId, name, description, salary } = body
+    const { departmentId, name, description, salary } = body
 
-    if (!companyId || !departmentId || !name) {
+    if (!departmentId || !name) {
       return NextResponse.json({ error: 'El nombre, departamento y empresa son requeridos' }, { status: 400 })
     }
 

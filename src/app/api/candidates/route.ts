@@ -1,13 +1,16 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const vacantId = searchParams.get('vacantId')
 
-    const where: any = {}
+    const where: any = { companyId }
     if (status) {
       // Support comma-separated statuses: ?status=pending_hire,hired,offered
       if (status.includes(',')) {
@@ -37,10 +40,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const body = await request.json()
     const {
       vacantId,
-      companyId,
       firstName,
       lastName,
       email,
@@ -49,9 +53,9 @@ export async function POST(request: NextRequest) {
       notes,
     } = body
 
-    if (!vacantId || !companyId || !firstName || !lastName || !email) {
+    if (!vacantId || !firstName || !lastName || !email) {
       return NextResponse.json(
-        { error: 'Vacante, empresa, nombre, apellido y email son requeridos' },
+        { error: 'Vacante, nombre, apellido y email son requeridos' },
         { status: 400 }
       )
     }

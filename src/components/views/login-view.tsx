@@ -33,6 +33,8 @@ export function LoginView() {
       localStorage.setItem('siga_token', data.token)
       login(data.user)
       setCompany(data.user.companyName, data.user.companyLogo)
+      // Verify login stored correctly
+      console.log('Login success - companyId:', data.user.companyId, 'companyName:', data.user.companyName)
       toast.success(`Bienvenido, ${data.user.name}`)
       // Check for pending QR redirect
       const pendingQr = sessionStorage.getItem('pending_qr')

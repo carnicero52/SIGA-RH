@@ -1,16 +1,15 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const unread = searchParams.get('unread')
-    const companyId = searchParams.get('companyId')
 
-    const where: any = {}
-    if (companyId) {
-      where.companyId = companyId
-    }
+    const where: any = { companyId }
     if (unread === 'true') {
       where.read = false
     }
@@ -35,15 +34,11 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
     const body = await request.json()
 
     // Mark all as read
     if (body.markAllRead) {
-      const companyId = body.companyId
-      if (!companyId) {
-        return NextResponse.json({ error: 'ID de empresa requerido' }, { status: 400 })
-      }
-
       await db.appNotification.updateMany({
         where: { companyId, read: false },
         data: { read: true },
@@ -58,13 +53,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID de notificación requerido' }, { status: 400 })
     }
 
-    const existing = await db.appNotification.findUnique({ where: { id } })
+    const existing = await db.appNotification.findFirst({ where: { id, companyId } })
     if (!existing) {
       return NextResponse.json({ error: 'Notificación no encontrada' }, { status: 404 })
     }
 
     await db.appNotification.update({
-      where: { id },
+      where: { id: existing.id },
       data: { read: true },
     })
 

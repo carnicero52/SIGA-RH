@@ -1,14 +1,6 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
-
-async function verifyAuth(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization')
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('No autorizado')
-  const token = authHeader.split(' ')[1]
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'siga-rh-secret-key-2024')
-  await jwtVerify(token, secret)
-}
 
 /**
  * DELETE /api/admin/clear
@@ -17,7 +9,7 @@ async function verifyAuth(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    await verifyAuth(request)
+    const { companyId } = getAuthPayload(request)
 
     const body = await request.json()
     const { type, dateFrom, dateTo } = body
@@ -25,12 +17,6 @@ export async function DELETE(request: NextRequest) {
     if (!type) {
       return NextResponse.json({ error: 'type es requerido' }, { status: 400 })
     }
-
-    // Get company id
-    const company = await db.company.findFirst({ where: { active: true }, orderBy: { createdAt: 'asc' } })
-    if (!company) return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 })
-
-    const companyId = company.id
 
     // Build date filter if provided
     const dateFilter: any = {}
@@ -92,7 +78,7 @@ export async function DELETE(request: NextRequest) {
       message: `Se eliminaron ${deletedCount} registros de ${type}`,
     })
   } catch (error: any) {
-    if (error.message === 'No autorizado') {
+    if (error.message === 'No autorizado' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
     console.error('Error en clear:', error)

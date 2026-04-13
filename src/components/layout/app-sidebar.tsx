@@ -87,7 +87,10 @@ export function AppSidebar() {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch('/api/notifications')
+        const token = localStorage.getItem('siga_token')
+        const res = await fetch('/api/notifications', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
         if (res.ok) {
           const data = await res.json()
           setUnreadNotifications(data.filter((n: any) => !n.read).length)
@@ -231,7 +234,10 @@ export function AppHeader() {
   useEffect(() => {
     const fetchNotifs = async () => {
       try {
-        const res = await fetch('/api/notifications')
+        const token = localStorage.getItem('siga_token')
+        const res = await fetch('/api/notifications', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
         if (res.ok) {
           const data = await res.json()
           setNotifications(Array.isArray(data) ? data.slice(0, 8) : [])

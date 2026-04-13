@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -6,10 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
 
-    const template = await db.contractTemplate.findUnique({
-      where: { id },
+    const template = await db.contractTemplate.findFirst({
+      where: { id, companyId },
       include: {
         _count: {
           select: { contracts: true },
@@ -33,10 +35,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
 
-    const template = await db.contractTemplate.findUnique({ where: { id } })
+    const template = await db.contractTemplate.findFirst({ where: { id, companyId } })
     if (!template) {
       return NextResponse.json({ error: 'Plantilla no encontrada' }, { status: 404 })
     }
@@ -51,7 +54,7 @@ export async function PUT(
     if (body.active !== undefined) updateData.active = body.active
 
     const updated = await db.contractTemplate.update({
-      where: { id },
+      where: { id: template.id },
       data: updateData,
       include: {
         _count: {
@@ -72,10 +75,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
 
-    const template = await db.contractTemplate.findUnique({
-      where: { id },
+    const template = await db.contractTemplate.findFirst({
+      where: { id, companyId },
       include: {
         _count: {
           select: { contracts: true },
@@ -94,7 +98,7 @@ export async function DELETE(
       )
     }
 
-    await db.contractTemplate.delete({ where: { id } })
+    await db.contractTemplate.delete({ where: { id: template.id } })
 
     return NextResponse.json({ message: 'Plantilla eliminada' })
   } catch (error: any) {

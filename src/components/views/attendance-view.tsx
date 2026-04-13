@@ -100,7 +100,7 @@ export function AttendanceView() {
       if (recordType) params.set('recordType', recordType)
       if (statusFilter) params.set('status', statusFilter)
 
-      const res = await fetch(`/api/attendance?${params}`)
+      const res = await fetch(`/api/attendance?${params}`, { headers: authHeaders() })
       if (!res.ok) throw new Error('Error al cargar registros')
       const data = await res.json()
       setRecords(data.records || [])
@@ -114,7 +114,7 @@ export function AttendanceView() {
 
   const fetchEmployees = useCallback(async () => {
     try {
-      const res = await fetch('/api/employees')
+      const res = await fetch('/api/employees', { headers: authHeaders() })
       if (!res.ok) return
       const data = await res.json()
       setEmployees(Array.isArray(data) ? data : data.employees || [])
@@ -125,7 +125,7 @@ export function AttendanceView() {
 
   const fetchBranches = useCallback(async () => {
     try {
-      const res = await fetch('/api/branches')
+      const res = await fetch('/api/branches', { headers: authHeaders() })
       if (!res.ok) return
       const data = await res.json()
       setBranches(Array.isArray(data) ? data : [])
@@ -148,7 +148,7 @@ export function AttendanceView() {
       setVerifying(record.id)
       const res = await fetch('/api/attendance/verify', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: record.id }),
       })
       if (!res.ok) throw new Error('Error al verificar')
@@ -176,7 +176,7 @@ export function AttendanceView() {
       const promises = Array.from(selectedIds).map((id) =>
         fetch('/api/attendance/verify', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify({ id }),
         })
       )

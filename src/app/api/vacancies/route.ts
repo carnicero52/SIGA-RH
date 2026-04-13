@@ -1,12 +1,15 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
 
-    const where: any = {}
+    const where: any = { companyId }
     if (status) {
       where.status = status
     }
@@ -30,9 +33,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const body = await request.json()
     const {
-      companyId,
       departmentId,
       positionId,
       title,
@@ -45,7 +49,7 @@ export async function POST(request: NextRequest) {
       vacanciesCount,
     } = body
 
-    if (!companyId || !title) {
+    if (!title) {
       return NextResponse.json({ error: 'Empresa y título son requeridos' }, { status: 400 })
     }
 

@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -6,10 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
 
-    const incident = await db.incident.findUnique({
-      where: { id },
+    const incident = await db.incident.findFirst({
+      where: { id, companyId },
       include: {
         employee: {
           select: {
@@ -38,10 +40,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
 
-    const incident = await db.incident.findUnique({ where: { id } })
+    const incident = await db.incident.findFirst({ where: { id, companyId } })
     if (!incident) {
       return NextResponse.json({ error: 'Incidencia no encontrada' }, { status: 404 })
     }
@@ -63,7 +66,7 @@ export async function PUT(
     }
 
     const updated = await db.incident.update({
-      where: { id },
+      where: { id: incident.id },
       data: updateData,
       include: {
         employee: {
@@ -89,14 +92,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(_request)
     const { id } = await params
 
-    const incident = await db.incident.findUnique({ where: { id } })
+    const incident = await db.incident.findFirst({ where: { id, companyId } })
     if (!incident) {
       return NextResponse.json({ error: 'Incidencia no encontrada' }, { status: 404 })
     }
 
-    await db.incident.delete({ where: { id } })
+    await db.incident.delete({ where: { id: incident.id } })
 
     return NextResponse.json({ message: 'Incidencia eliminada' })
   } catch (error: any) {

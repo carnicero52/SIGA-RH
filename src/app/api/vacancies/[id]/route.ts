@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -6,10 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
 
-    const vacant = await db.vacant.findUnique({
-      where: { id },
+    const vacant = await db.vacant.findFirst({
+      where: { id, companyId },
       include: {
         department: { select: { id: true, name: true } },
         position: { select: { id: true, name: true } },
@@ -35,16 +37,17 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
 
-    const existing = await db.vacant.findUnique({ where: { id } })
+    const existing = await db.vacant.findFirst({ where: { id, companyId } })
     if (!existing) {
       return NextResponse.json({ error: 'Vacante no encontrada' }, { status: 404 })
     }
 
     const vacant = await db.vacant.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         ...(body.title !== undefined && { title: body.title }),
         ...(body.departmentId !== undefined && { departmentId: body.departmentId || null }),
@@ -77,14 +80,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
 
-    const existing = await db.vacant.findUnique({ where: { id } })
+    const existing = await db.vacant.findFirst({ where: { id, companyId } })
     if (!existing) {
       return NextResponse.json({ error: 'Vacante no encontrada' }, { status: 404 })
     }
 
-    await db.vacant.delete({ where: { id } })
+    await db.vacant.delete({ where: { id: existing.id } })
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

@@ -176,7 +176,10 @@ export function DashboardView() {
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/dashboard/stats')
+      const token = localStorage.getItem('siga_token')
+      const res = await fetch('/api/dashboard/stats', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Error al cargar estadísticas')

@@ -82,7 +82,7 @@ function AttendanceReport() {
       const params = new URLSearchParams({ from, to })
       if (branchFilter !== 'all') params.set('branchId', branchFilter)
       if (deptFilter !== 'all') params.set('departmentId', deptFilter)
-      const res = await fetch(`/api/attendance?${params}`)
+      const res = await fetch(`/api/attendance?${params}`, { headers: authHeaders() })
       if (!res.ok) throw new Error('Error al generar reporte')
       const data = await res.json()
       const arr = Array.isArray(data) ? data : data.records || []
@@ -243,7 +243,10 @@ function EmployeesReport() {
   const generate = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/employees')
+      const token = localStorage.getItem('siga_token')
+      const res = await fetch('/api/employees', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!res.ok) throw new Error('Error al cargar empleados')
       const data = await res.json()
       const arr = Array.isArray(data) ? data : data.employees || []
@@ -361,7 +364,7 @@ function IncidentsReport() {
       const params = new URLSearchParams({ from, to })
       if (severityFilter !== 'all') params.set('severity', severityFilter)
       if (typeFilter !== 'all') params.set('type', typeFilter)
-      const res = await fetch(`/api/incidents?${params}`)
+      const res = await fetch(`/api/incidents?${params}`, { headers: authHeaders() })
       if (!res.ok) throw new Error('Error al cargar incidencias')
       const data = await res.json()
       const arr = Array.isArray(data) ? data : data.incidents || []
@@ -498,7 +501,10 @@ function NominaReport() {
   const generate = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/employees')
+      const token = localStorage.getItem('siga_token')
+      const res = await fetch('/api/employees', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!res.ok) throw new Error('Error al cargar empleados')
       const data = await res.json()
       const arr = Array.isArray(data) ? data : data.employees || []

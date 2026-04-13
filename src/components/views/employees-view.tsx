@@ -178,7 +178,7 @@ function EmployeeFormDialog({
   useEffect(() => {
     if (!open || editMode) return
     // Load approved/pending_hire candidates
-    fetch('/api/candidates?status=pending_hire,hired,offered')
+    fetch('/api/candidates?status=pending_hire,hired,offered', { headers: authHeaders() })
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) setApprovedCandidates(data)

@@ -1,12 +1,14 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { companyId } = getAuthPayload(request)
     const { id } = await params
     const body = await request.json()
 
-    const existing = await db.payrollItem.findUnique({ where: { id } })
+    const existing = await db.payrollItem.findFirst({ where: { id, companyId } })
     if (!existing) return NextResponse.json({ error: 'Ítem no encontrado' }, { status: 404 })
 
     // Recalculate net if adjustments change
@@ -16,7 +18,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const netAmount = Math.max(0, grossAmount - existing.absenceDeduction - existing.lateDeduction - otherDeductions)
 
     const item = await db.payrollItem.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         ...(body.otherDeductions !== undefined && { otherDeductions: Number(body.otherDeductions) }),
         ...(body.otherBonuses !== undefined && { otherBonuses: Number(body.otherBonuses) }),

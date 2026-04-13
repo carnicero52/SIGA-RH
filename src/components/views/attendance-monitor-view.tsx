@@ -59,7 +59,10 @@ export function AttendanceMonitorView() {
 
   const fetchBranches = useCallback(async () => {
     try {
-      const res = await fetch('/api/branches')
+      const token = localStorage.getItem('siga_token')
+      const res = await fetch('/api/branches', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!res.ok) return
       const data = await res.json()
       setBranches(Array.isArray(data) ? data : [])
@@ -73,13 +76,19 @@ export function AttendanceMonitorView() {
       const today = new Date().toISOString().split('T')[0]
       
       // Fetch all active employees
-      const empRes = await fetch('/api/employees')
+      const token = localStorage.getItem('siga_token')
+
+      const empRes = await fetch('/api/employees', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!empRes.ok) return
       const empData = await empRes.json()
       const allEmployees: Employee[] = Array.isArray(empData) ? empData : empData.employees || []
 
       // Fetch today's attendance records
-      const attRes = await fetch(`/api/attendance?dateFrom=${today}&dateTo=${today}&limit=500&${branchFilter ? `branchId=${branchFilter}` : ''}`)
+      const attRes = await fetch(`/api/attendance?dateFrom=${today}&dateTo=${today}&limit=500&${branchFilter ? `branchId=${branchFilter}` : ''}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!attRes.ok) return
       const attData = await attRes.json()
       const todayRecords: AttendanceRecord[] = attData.records || []

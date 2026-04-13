@@ -1,10 +1,13 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const branches = await db.branch.findMany({
-      where: { active: true },
+      where: { active: true, companyId },
       include: {
         _count: {
           select: { employees: true, attendanceRecords: true },
@@ -21,10 +24,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
     const body = await request.json()
-    const { companyId, name, code, address, city, state, latitude, longitude, geofenceRadius, phone, managerName } = body
+    const { name, code, address, city, state, latitude, longitude, geofenceRadius, phone, managerName } = body
 
-    if (!companyId || !name) {
+    if (!name) {
       return NextResponse.json({ error: 'El nombre y la empresa son requeridos' }, { status: 400 })
     }
 

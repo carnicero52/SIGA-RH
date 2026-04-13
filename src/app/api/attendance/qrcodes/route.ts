@@ -1,9 +1,12 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const branchId = searchParams.get('branchId')
 
@@ -14,6 +17,7 @@ export async function GET(request: NextRequest) {
     const qrcodes = await db.qRCode.findMany({
       where: {
         branchId,
+        branch: { companyId },
         active: true,
         expiresAt: { gt: new Date() },
       },
@@ -32,6 +36,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
     const body = await request.json()
     const { branchId } = body
 
@@ -39,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'branchId es requerido' }, { status: 400 })
     }
 
-    const branch = await db.branch.findUnique({ where: { id: branchId } })
+    const branch = await db.branch.findFirst({ where: { id: branchId, companyId } })
     if (!branch) {
       return NextResponse.json({ error: 'Sucursal no encontrada' }, { status: 404 })
     }

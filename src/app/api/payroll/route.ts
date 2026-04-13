@@ -1,15 +1,15 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || ''
 
-    const company = await db.company.findFirst({ where: { active: true }, orderBy: { createdAt: 'asc' } })
-    if (!company) return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 })
-
-    const where: any = { companyId: company.id }
+    const where: any = { companyId }
     if (status) where.status = status
 
     const periods = await db.payrollPeriod.findMany({
@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const body = await request.json()
     const { name, frequency, startDate, endDate, currency, notes } = body
 
@@ -36,12 +38,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'name, frequency, startDate y endDate son requeridos' }, { status: 400 })
     }
 
-    const company = await db.company.findFirst({ where: { active: true }, orderBy: { createdAt: 'asc' } })
-    if (!company) return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 })
-
     const period = await db.payrollPeriod.create({
       data: {
-        companyId: company.id,
+        companyId,
         name,
         frequency,
         startDate,

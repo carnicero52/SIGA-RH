@@ -1,13 +1,16 @@
 import { db } from '@/lib/db'
+import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { companyId } = getAuthPayload(request)
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const employeeId = searchParams.get('employeeId')
 
-    const where: Record<string, unknown> = {}
+    const where: Record<string, unknown> = { companyId }
     if (status) where.status = status
     if (employeeId) where.employeeId = employeeId
 
@@ -38,19 +41,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { templateId, employeeId, companyId, startDate, endDate, notes } = body
+    const { companyId } = getAuthPayload(request)
 
-    if (!templateId || !employeeId || !companyId || !startDate) {
+    const body = await request.json()
+    const { templateId, employeeId, startDate, endDate, notes } = body
+
+    if (!templateId || !employeeId || !startDate) {
       return NextResponse.json(
-        { error: 'templateId, employeeId, companyId y startDate son requeridos' },
+        { error: 'templateId, employeeId y startDate son requeridos' },
         { status: 400 }
       )
     }
 
     // Get template to copy content
-    const template = await db.contractTemplate.findUnique({
-      where: { id: templateId },
+    const template = await db.contractTemplate.findFirst({
+      where: { id: templateId, companyId },
     })
 
     if (!template) {

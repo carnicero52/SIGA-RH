@@ -124,7 +124,7 @@ function PublicCheckInContent() {
         // Fetch employees
         if (data.companyId) {
           setLoadingEmployees(true)
-          const empRes = await fetch(`/api/public/checkin/employees?companyId=${data.companyId}`)
+          const empRes = await fetch(`/api/public/checkin/employees?branchId=${data.branchId}`)
           if (empRes.ok) {
             const empData = await empRes.json()
             setEmployees(empData.employees || [])
