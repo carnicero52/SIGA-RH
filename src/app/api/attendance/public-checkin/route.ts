@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
         active: true,
         expiresAt: { gt: new Date() },
       },
+      include: { branch: { select: { id: true, name: true, companyId: true, latitude: true, longitude: true, geofenceRadius: true } } },
     })
 
     if (!qrCode) {
