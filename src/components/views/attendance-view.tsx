@@ -13,6 +13,7 @@ function authHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('siga_token') : null
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
+
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -143,7 +144,8 @@ export function AttendanceView() {
   useEffect(() => {
     fetchEmployees()
     fetchBranches()
-  }, [fetchEmployees, fetchBranches])
+    fetchRecords()
+  }, [fetchEmployees, fetchBranches, fetchRecords])
 
 
   const handleToggleVerify = async (record: AttendanceRecord) => {

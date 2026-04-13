@@ -651,7 +651,8 @@ export function EmployeesView() {
 
   useEffect(() => {
     fetchReferenceData()
-  }, [fetchReferenceData])
+    fetchEmployees()
+  }, [fetchReferenceData, fetchEmployees])
 
 
   // Search debounce
