@@ -71,9 +71,13 @@ export function CheckInView() {
   const [step, setStep] = useState<Step>('idle')
 
   // Employee selection
-  const [employees, setEmployees] = useState<Employee[]>([])
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('')
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('')
   const [loadingEmployees, setLoadingEmployees] = useState(true)
+
+  // Identification methods
+  const [identifyBy, setIdentifyBy] = useState<'pin' | 'phone' | 'email'>('pin')
+  const [identifyValue, setIdentifyValue] = useState('')
 
   // QR code
   const [scannedCode, setScannedCode] = useState('')
@@ -275,6 +279,42 @@ export function CheckInView() {
       return
     }
     verifyQrCode(code)
+  }
+
+  const handleIdentifyEmployee = async () => {
+    if (!identifyValue.trim()) {
+      toast.error('Ingresa tu ' + (identifyBy === 'pin' ? 'PIN' : identifyBy === 'phone' ? 'teléfono' : 'email'))
+      return
+    }
+    if (!scannedCode) {
+      toast.error('Escanea primero el código QR')
+      return
+    }
+    setLoadingEmployees(true)
+    try {
+      const payload: any = { qrCodeId: scannedCode }
+      if (identifyBy === 'pin') payload.pin = identifyValue.trim()
+      else if (identifyBy === 'phone') payload.phone = identifyValue.trim()
+      else payload.email = identifyValue.trim()
+
+      const res = await fetch('/api/attendance/public-identify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al identificar')
+      }
+      setSelectedEmployeeId(data.employee.id)
+      setSelectedEmployeeName(`${data.employee.firstName} ${data.employee.lastName}`)
+      toast.success(`¡Bienvenido, ${data.employee.firstName}!`)
+      checkPendingCheckIn()
+    } catch (err: any) {
+      toast.error(err.message || 'Empleado no encontrado')
+    } finally {
+      setLoadingEmployees(false)
+    }
   }
 
   // ── Selfie Camera ───────────────────────────────────────────────────────────
@@ -682,6 +722,93 @@ export function CheckInView() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Employee Identification */}
+          {!selectedEmployeeId ? (
+            <Card className="border-blue-200 bg-blue-50/50">
+              <CardContent className="p-4 space-y-4">
+                <div className="text-center">
+                  <User className="h-10 w-10 text-blue-600 mx-auto mb-2" />
+                  <p className="font-medium text-blue-700">Identifícate</p>
+                  <p className="text-xs text-muted-foreground">Ingresa tu PIN, teléfono o email</p>
+                </div>
+
+                {/* Method Selection */}
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={identifyBy === 'pin' ? 'default' : 'outline'}
+                    size="sm"
+                    className={identifyBy === 'pin' ? 'bg-blue-600' : 'border-blue-200'}
+                    onClick={() => { setIdentifyBy('pin'); setIdentifyValue('') }}
+                  >
+                    🔐 PIN
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={identifyBy === 'phone' ? 'default' : 'outline'}
+                    size="sm"
+                    className={identifyBy === 'phone' ? 'bg-blue-600' : 'border-blue-200'}
+                    onClick={() => { setIdentifyBy('phone'); setIdentifyValue('') }}
+                  >
+                    📱 Teléfono
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={identifyBy === 'email' ? 'default' : 'outline'}
+                    size="sm"
+                    className={identifyBy === 'email' ? 'bg-blue-600' : 'border-blue-200'}
+                    onClick={() => { setIdentifyBy('email'); setIdentifyValue('') }}
+                  >
+                    📧 Email
+                  </Button>
+                </div>
+
+                {/* Input */}
+                <div className="flex gap-2">
+                  <Input
+                    type={identifyBy === 'pin' ? 'tel' : identifyBy === 'email' ? 'email' : 'tel'}
+                    placeholder={
+                      identifyBy === 'pin' ? 'Ingresa tu PIN de 6 dígitos' :
+                      identifyBy === 'phone' ? 'Ingresa tu número de teléfono' :
+                      'Ingresa tu correo electrónico'
+                    }
+                    value={identifyValue}
+                    onChange={(e) => setIdentifyValue(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleIdentifyEmployee()}
+                    className="flex-1"
+                    maxLength={identifyBy === 'pin' ? 6 : undefined}
+                  />
+                  <Button
+                    onClick={handleIdentifyEmployee}
+                    disabled={loadingEmployees}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {loadingEmployees ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Identificar'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-emerald-200 bg-emerald-50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <User className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-emerald-700">{selectedEmployeeName}</p>
+                  <p className="text-xs text-muted-foreground">Identificado ✓</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSelectedEmployeeId(''); setSelectedEmployeeName('') }}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Record Type Selection */}
           <div className="space-y-2">
