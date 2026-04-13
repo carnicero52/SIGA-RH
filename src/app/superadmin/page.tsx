@@ -51,13 +51,23 @@ export default function SuperAdminPage() {
   const [search, setSearch] = useState('')
   const [editCompany, setEditCompany] = useState<any>(null)
   const [saving, setSaving] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(true)
+
+  // Auto-refresh every 10 seconds
+  useEffect(() => {
+    if (!authed || !autoRefresh) return
+    const interval = setInterval(() => {
+      fetchCompanies(false) // false = don't show loading indicator
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [authed, autoRefresh])
 
   const superHeaders = () => ({
     'Content-Type': 'application/json',
   })
 
-  const fetchCompanies = async () => {
-    setLoading(true)
+  const fetchCompanies = async (showLoading = true) => {
+    if (showLoading) setLoading(true)
     try {
       const res = await fetch(`/api/superadmin/companies?secret=${encodeURIComponent(secret)}`, { headers: superHeaders() })
       if (!res.ok) throw new Error('No autorizado')
@@ -67,7 +77,7 @@ export default function SuperAdminPage() {
       toast.error(e.message || 'Error al cargar')
       setAuthed(false)
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }
 
