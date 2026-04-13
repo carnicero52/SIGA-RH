@@ -86,7 +86,7 @@ export const useAppStore = create<AppState>()(
       companyName: 'SIGA-RH',
       companyLogo: '',
       companySlogan: '',
-      setCompany: (name, logo = '') => set({ companyName: name, companyLogo: logo }),
+      setCompany: (name, logo = '', slogan = '') => set({ companyName: name, companyLogo: logo, companySlogan: slogan }),
     }),
     {
       name: 'siga-rh-store',
