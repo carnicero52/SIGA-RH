@@ -14,10 +14,7 @@ export function useAutoRefresh(
   useEffect(() => {
     if (!enabled) return
 
-    // Ejecutar inmediatamente
-    fetchFn()
-
-    // Luego ejecutar cada intervalMs
+    // Solo ejecutar cada intervalMs, NO al inicio (para evitar parpadeo)
     const interval = setInterval(fetchFn, intervalMs)
 
     return () => clearInterval(interval)
