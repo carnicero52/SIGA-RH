@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -193,9 +192,6 @@ export function DashboardView() {
       setLoading(false)
     }
   }, [])
-
-  // Auto-refresh every 10 seconds
-  useAutoRefresh(fetchStats, 10000)
 
   return (
     <div className="space-y-6">

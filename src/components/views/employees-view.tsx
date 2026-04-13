@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -654,8 +653,6 @@ export function EmployeesView() {
     fetchReferenceData()
   }, [fetchReferenceData])
 
-  // Auto-refresh every 10 seconds
-  useAutoRefresh(fetchEmployees, 10000)
 
   // Search debounce
   useEffect(() => {

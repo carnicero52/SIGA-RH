@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -146,8 +145,6 @@ export function AttendanceView() {
     fetchBranches()
   }, [fetchEmployees, fetchBranches])
 
-  // Auto-refresh every 10 seconds
-  useAutoRefresh(fetchRecords, 10000)
 
   const handleToggleVerify = async (record: AttendanceRecord) => {
     try {

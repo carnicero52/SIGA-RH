@@ -2,32 +2,30 @@ import { useEffect, useRef } from 'react'
 
 /**
  * Hook para auto-refresh de datos cada X segundos
- * No muestra indicador de carga para evitar parpadeo
- * @param fetchFn - función que obtiene los datos
- * @param intervalMs - intervalo en ms (default 15 segundos)
- * @param enabled - si está habilitado (default true)
+ * Solo actualiza datos en背景, sin afectar UI loading state
  */
 export function useAutoRefresh(
   fetchFn: () => Promise<void>,
-  intervalMs: number = 15000,
+  intervalMs: number = 30000,
   enabled: boolean = true
 ) {
-  const isFirstRun = useRef(true)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!enabled) return
 
-    // Skip on first run - let the initial useEffect handle that
-    if (isFirstRun.current) {
-      isFirstRun.current = false
-      return
+    // Limpiar intervalo anterior
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
     }
 
-    // Auto-refresh without loading indicator
-    fetchFn()
+    // Configurar nuevo intervalo - NO llama fetchFn al inicio
+    intervalRef.current = setInterval(fetchFn, intervalMs)
 
-    const interval = setInterval(fetchFn, intervalMs)
-
-    return () => clearInterval(interval)
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
   }, [fetchFn, intervalMs, enabled])
 }
