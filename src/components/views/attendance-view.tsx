@@ -8,6 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+
+// Auth headers helper
+function authHeaders() {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('siga_token') : null
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
