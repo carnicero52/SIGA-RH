@@ -118,17 +118,17 @@ export function AppSidebar() {
         )}
       >
         {/* Logo */}
-        <div className="flex h-20 items-center gap-3 border-b border-sidebar-border px-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-sidebar-primary/10 overflow-hidden">
+        <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-sidebar-primary/10 overflow-hidden">
             {companyLogo ? (
-              <img src={companyLogo} alt={companyName} className="h-12 w-12 object-contain" />
+              <img src={companyLogo} alt={companyName} className="h-10 w-10 object-contain" />
             ) : (
-              <img src="/logo.png" alt="SIGA-RH" className="h-12 w-12 object-contain" />
+              <img src="/logo.png" alt="SIGA-RH" className="h-10 w-10 object-contain" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold tracking-tight truncate">{companyName}</h1>
-            <p className="text-xs text-sidebar-foreground/60 truncate">{companySlogan || 'Gestión de RH'}</p>
+            <h1 className="text-sm font-bold tracking-tight truncate">{companyName}</h1>
+            <p className="text-[10px] text-sidebar-foreground/60 truncate">{companySlogan || 'Gestión de RH'}</p>
           </div>
         </div>
 
