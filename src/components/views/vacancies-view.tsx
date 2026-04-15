@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { toast } from 'sonner'
+import { useAppStore } from '@/store/app-store'
 import { cn } from '@/lib/utils'
 import type { Vacant, Department, Position } from '@/lib/types'
 import { vacantStatusLabels, employmentTypeLabels } from '@/lib/types'
@@ -60,6 +61,8 @@ const defaultForm = {
 }
 
 export function VacanciesView() {
+  const user = useAppStore((s) => s.user)
+  const companyId = user?.companyId || ""
   const [vacancies, setVacancies] = useState<Vacant[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [positions, setPositions] = useState<Position[]>([])
