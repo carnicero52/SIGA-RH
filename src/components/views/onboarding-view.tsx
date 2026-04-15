@@ -15,12 +15,18 @@ import {
 import { toast } from 'sonner'
 
 const STEPS = [
-  { id: 1, title: 'Sucursal', icon: Building2, description: '¿Dónde trabajas?' },
-  { id: 2, title: 'Departamentos', icon: MapPin, description: 'Organiza tu empresa' },
-  { id: 3, title: 'Puestos', icon: Users, description: 'Define posiciones' },
-  { id: 4, title: 'Turnos', icon: Clock, description: 'Horarios de trabajo' },
-  { id: 5, title: 'Empleados', icon: UserPlus, description: 'Añade tu equipo' },
+  { id: 1, title: 'Sucursal', description: '¿Dónde trabajas?' },
+  { id: 2, title: 'Departamentos', description: 'Organiza tu empresa' },
+  { id: 3, title: 'Puestos', description: 'Define posiciones' },
+  { id: 4, title: 'Turnos', description: 'Horarios de trabajo' },
+  { id: 5, title: 'Empleados', description: 'Añade tu equipo' },
 ]
+
+const StepIcon = ({ step }: { step: number }) => {
+  const icons = [Building2, MapPin, Users, Clock, UserPlus]
+  const Icon = icons[step - 1] || Building2
+  return <Icon className="w-5 h-5" />
+}
 
 export function OnboardingView() {
   const navigate = useAppStore((s) => s.navigate)
@@ -144,7 +150,7 @@ export function OnboardingView() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {STEPS[step - 1] ? React.createElement(STEPS[step - 1].icon, { className: "w-5 h-5" }) : null}
+              <StepIcon step={step} />
               {STEPS[step - 1]?.title || 'Configuración'}
             </CardTitle>
           </CardHeader>
