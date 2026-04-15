@@ -68,6 +68,7 @@ export default function SuperAdminPage() {
   })
 
   const fetchCompanies = async (showLoading = true) => {
+    if (!secret) { toast.error("Ingresa la clave de superadmin"); return }
     if (showLoading) setLoading(true)
     try {
       const res = await fetch(`/api/superadmin/companies?secret=${encodeURIComponent(secret)}`, { headers: superHeaders() })
@@ -75,7 +76,7 @@ export default function SuperAdminPage() {
       setCompanies(await res.json())
       setAuthed(true)
     } catch (e: any) {
-      toast.error(e.message || 'Error al cargar')
+      console.log('SuperAdmin error:', e); toast.error(e.message || 'Error al cargar')
       setAuthed(false)
     } finally {
       if (showLoading) setLoading(false)
