@@ -79,6 +79,7 @@ export default function CareersPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    const companyId = params.get('companyId') || ''
     const vacancyId = params.get('vacancy')
     loadData(vacancyId || undefined)
   }, [])
@@ -86,8 +87,8 @@ export default function CareersPage() {
   async function loadData(preselectedId?: string) {
     try {
       const [companyRes, vacanciesRes] = await Promise.all([
-        fetch('/api/public/company-info'),
-        fetch('/api/public/vacancies'),
+        fetch('/api/public/company-info?companyId=' + companyId),
+        fetch('/api/public/vacancies?companyId=' + companyId),
       ])
       const companyData: Company = await companyRes.json()
       const vacanciesData: Vacancy[] = await vacanciesRes.json()
