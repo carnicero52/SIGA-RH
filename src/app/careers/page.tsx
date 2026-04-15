@@ -81,10 +81,10 @@ export default function CareersPage() {
     const params = new URLSearchParams(window.location.search)
     const companyId = params.get('companyId') || ''
     const vacancyId = params.get('vacancy')
-    loadData(vacancyId || undefined)
+    loadData(companyId, vacancyId || undefined)
   }, [])
 
-  async function loadData(preselectedId?: string) {
+  async function loadData(companyId: string, preselectedId?: string) {
     if (!companyId) {
       toast.error('Company ID no encontrado en la URL')
       setLoading(false)

@@ -63,6 +63,7 @@ export default function SuperAdminPage() {
   }, [authed, autoRefresh])
 
   const superHeaders = () => ({
+    'Authorization': 'Bearer ' + secret,
     'Content-Type': 'application/json',
   })
 
