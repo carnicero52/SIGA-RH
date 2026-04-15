@@ -57,6 +57,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
     console.error('SuperAdmin GET error:', error)
-    return NextResponse.json({ error: 'Error al obtener empresas' }, { status: 500 })
+    return NextResponse.json({ error: 'Error al obtener empresas: ' + error.message }, { status: 500 })
   }
 }
