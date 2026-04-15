@@ -224,7 +224,7 @@ export function VacanciesView() {
             size="sm"
             className="gap-2"
             onClick={() => {
-              const url = typeof window !== 'undefined' ? `${window.location.origin}/careers` : '/careers'
+              const url = typeof window !== 'undefined' ? `${window.location.origin}/careers?companyId=${companyId}` : '/careers'
               window.open(url, '_blank')
             }}
           >
@@ -525,7 +525,7 @@ export function VacanciesView() {
               <QRCodeSVG
                 value={qrVacancy
                   ? `${window.location.origin}/careers?vacancy=${qrVacancy.id}`
-                  : `${window.location.origin}/careers`
+                  : `${window.location.origin}/careers?companyId=${companyId}`
                 }
                 size={240}
                 bgColor="#ffffff"
@@ -538,7 +538,7 @@ export function VacanciesView() {
               {typeof window !== 'undefined'
                 ? qrVacancy
                   ? `${window.location.origin}/careers?vacancy=${qrVacancy.id}`
-                  : `${window.location.origin}/careers`
+                  : `${window.location.origin}/careers?companyId=${companyId}`
                 : '/careers'
               }
             </p>
@@ -550,7 +550,7 @@ export function VacanciesView() {
                 const url = typeof window !== 'undefined'
                   ? qrVacancy
                     ? `${window.location.origin}/careers?vacancy=${qrVacancy.id}`
-                    : `${window.location.origin}/careers`
+                    : `${window.location.origin}/careers?companyId=${companyId}`
                   : '/careers'
                 window.open(url, '_blank')
               }}
