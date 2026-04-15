@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
         companyName: user.company.name,
         companyLogo: user.company.logo,
         companySlogan: user.company.slogan,
+        onboardingCompleted: user.company.onboardingCompleted,
       },
     })
   } catch (error: any) {

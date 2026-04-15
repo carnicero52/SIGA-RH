@@ -30,6 +30,7 @@ model Company {
   planExpiresAt   DateTime?
   maxEmployees    Int      @default(10)         // limit per plan
   adminNotes      String?                       // super-admin notes
+  onboardingCompleted Boolean  @default(false)
   address     String?
   city        String?
   state       String?
