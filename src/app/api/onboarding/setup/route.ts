@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
 
     // Check if onboarding already completed
     const company = await db.company.findUnique({ where: { id: companyId } })
-    if (company?.onboardingCompleted === true) {
       return NextResponse.json({ success: true, message: 'Already completed' })
     }
 
@@ -98,7 +97,6 @@ export async function POST(request: NextRequest) {
     // Update company to mark onboarding complete
     await db.company.update({
       where: { id: companyId },
-      data: { onboardingCompleted: true },
     })
 
     return NextResponse.json({ success: true })

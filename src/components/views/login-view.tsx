@@ -39,7 +39,7 @@ export function LoginView() {
       if (pendingQr) {
         sessionStorage.removeItem('pending_qr')
         navigate('check-in', { qr: pendingQr })
-      } else if (!data.onboardingCompleted) {
+      } else {
         navigate('onboarding')
       } else {
         navigate('dashboard')
