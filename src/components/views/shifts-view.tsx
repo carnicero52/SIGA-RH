@@ -28,6 +28,11 @@ import { cn } from '@/lib/utils'
 import type { Shift, Employee, EmployeeShift } from '@/lib/types'
 import { shiftTypeLabels } from '@/lib/types'
 
+function authHeaders() {
+  const token = localStorage.getItem('siga_token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 const PREDEFINED_COLORS = [
   '#10b981', '#14b8a6', '#06b6d4', '#f59e0b', '#f97316',
   '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#84cc16',
