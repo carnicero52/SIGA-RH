@@ -85,13 +85,28 @@ export default function CareersPage() {
   }, [])
 
   async function loadData(preselectedId?: string) {
+    if (!companyId) {
+      toast.error('Company ID no encontrado en la URL')
+      setLoading(false)
+      return
+    }
     try {
       const [companyRes, vacanciesRes] = await Promise.all([
         fetch('/api/public/company-info?companyId=' + companyId),
         fetch('/api/public/vacancies?companyId=' + companyId),
       ])
-      const companyData: Company = await companyRes.json()
-      const vacanciesData: Vacancy[] = await vacanciesRes.json()
+      const companyData = await companyRes.json()
+      const vacanciesData = await vacanciesRes.json()
+      
+      if (companyData.error) {
+        toast.error(companyData.error)
+        return
+      }
+      if (vacanciesData.error) {
+        toast.error(vacanciesData.error)
+        return
+      }
+      
       setCompany(companyData)
       setVacancies(Array.isArray(vacanciesData) ? vacanciesData : [])
 
