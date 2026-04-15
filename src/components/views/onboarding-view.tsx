@@ -144,7 +144,7 @@ export function OnboardingView() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {STEPS[step - 1] && <STEPS[step - 1].icon className="w-5 h-5" />}
+              {STEPS[step - 1] ? React.createElement(STEPS[step - 1].icon, { className: "w-5 h-5" }) : null}
               {STEPS[step - 1]?.title || 'Configuración'}
             </CardTitle>
           </CardHeader>
