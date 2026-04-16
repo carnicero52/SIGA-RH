@@ -10,54 +10,17 @@ function verifySuperAdmin(request: NextRequest) {
   if (secret !== SUPERADMIN_SECRET) throw new Error('No autorizado')
 }
 
-/**
- * GET /api/superadmin/companies
- * Returns all companies with usage stats for the super-admin dashboard.
- */
 export async function GET(request: NextRequest) {
   try {
     verifySuperAdmin(request)
 
     const companies = await db.company.findMany({
-      include: {
-        _count: {
-          select: {
-            employees: true,
-            branches: true,
-            attendanceRecords: true,
-            users: true,
-          },
-        },
-      },
       orderBy: { createdAt: 'desc' },
     })
 
-    // Enrich with active employee count (active: true)
-    const enriched = await Promise.all(companies.map(async (c) => {
-      const activeEmployees = await db.employee.count({
-        where: { companyId: c.id, active: true },
-      })
-      const lastActivity = await db.attendanceRecord.findFirst({
-        where: { companyId: c.id },
-        orderBy: { recordTime: 'desc' },
-        select: { recordTime: true },
-      })
-      return {
-        ...c,
-        activeEmployees,
-        lastActivityAt: lastActivity?.recordTime || null,
-        // Mask sensitive SMTP passwords
-        smtpPassword: c.smtpPassword ? '••••••••' : null,
-      }
-    }))
-
-    return NextResponse.json(enriched)
+    return NextResponse.json(companies)
   } catch (error: any) {
-    console.error('SuperAdmin GET full error:', error)
-    const errorMessage = error.message || 'Error desconocido'
-    if (errorMessage.includes('No autorizado')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-    return NextResponse.json({ error: 'Error al obtener empresas: ' + errorMessage.substring(0, 100) }, { status: 500 })
+    console.error('SuperAdmin error:', error)
+    return NextResponse.json({ error: 'Error: ' + error.message }, { status: 500 })
   }
 }
