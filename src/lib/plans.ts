@@ -25,7 +25,7 @@ export const PLANS: Record<PlanType, PlanConfig> = {
   free: {
     name: 'Gratuito',
     price: 0,
-    maxEmployees: 10,
+    maxEmployees: 5,
     maxBranches: 1,
     maxDepartments: 1,
     allowGps: false,
@@ -42,8 +42,8 @@ export const PLANS: Record<PlanType, PlanConfig> = {
   },
   professional: {
     name: 'Profesional',
-    price: 29,
-    maxEmployees: 100,
+    price: 49,
+    maxEmployees: 20,
     maxBranches: Infinity,
     maxDepartments: 10,
     allowGps: true,
