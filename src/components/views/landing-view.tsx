@@ -43,7 +43,7 @@ const plans = [
     color: 'border-border',
     btnClass: 'variant-outline',
     features: [
-      'Hasta 10 empleados',
+      'Hasta 5 empleados',
       '1 sucursal',
       'Control de asistencia QR',
       'Dashboard básico',
@@ -54,14 +54,14 @@ const plans = [
   },
   {
     name: 'Profesional',
-    price: '$29',
+    price: '$49',
     period: '/mes',
     badge: '🔥 Más Popular',
     desc: 'Para empresas que necesitan control real.',
     color: 'border-emerald-500 shadow-xl shadow-emerald-100 dark:shadow-emerald-900/20',
     btnClass: '',
     features: [
-      'Hasta 100 empleados',
+      'Hasta 20 empleados',
       'Sucursales ilimitadas',
       'QR + GPS + Selfie antifraude',
       'Nómina automática',
