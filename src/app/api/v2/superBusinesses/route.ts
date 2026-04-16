@@ -12,8 +12,27 @@ export async function GET(request: NextRequest) {
   try {
     const companies = await db.company.findMany({
       orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: {
+            employees: { where: { active: true } },
+            branches: { where: { active: true } },
+            departments: { where: { active: true } },
+            attendanceRecords: true,
+          },
+        },
+      },
     })
-    return NextResponse.json(companies)
+    
+    // Add activeEmployees computed field
+    const companiesWithStats = companies.map(c => ({
+      ...c,
+      activeEmployees: c._count.employees,
+      activeBranches: c._count.branches,
+      activeDepartments: c._count.departments,
+    }))
+    
+    return NextResponse.json(companiesWithStats)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
