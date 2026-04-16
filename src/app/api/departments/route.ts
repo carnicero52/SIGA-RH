@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { getAuthPayload } from '@/lib/server-auth'
 import { NextRequest, NextResponse } from 'next/server'
+import { checkPlanLimit } from '@/lib/plan-check'
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,6 +47,12 @@ export async function POST(request: NextRequest) {
     }
     if (company.planStatus === 'suspended') {
       return NextResponse.json({ error: 'Plan suspendido' }, { status: 403 })
+
+    // Check plan limits for departments
+    const deptCheck = await checkPlanLimit(companyId, 'departments')
+    if (!deptCheck.allowed) {
+      return deptCheck.error
+    }
     }
     const body = await request.json()
     const { name, description, managerName } = body
