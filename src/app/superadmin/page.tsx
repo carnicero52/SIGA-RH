@@ -71,7 +71,7 @@ export default function SuperAdminPage() {
     if (!secret) { toast.error("Ingresa la clave de superadmin"); return }
     if (showLoading) setLoading(true)
     try {
-      const res = await fetch(`/api/superadmin/all-businesses?secret=${encodeURIComponent(secret)}`, { headers: superHeaders() })
+      const res = await fetch(`/api/v2/superBusinesses?secret=${encodeURIComponent(secret)}`, { headers: superHeaders() })
       if (!res.ok) throw new Error('No autorizado')
       setCompanies(await res.json())
       setAuthed(true)
@@ -87,7 +87,7 @@ export default function SuperAdminPage() {
     if (!editCompany) return
     setSaving(true)
     try {
-      const res = await fetch(`/api/superadmin/all-businesses/${editCompany.id}?secret=${encodeURIComponent(secret)}`, {
+      const res = await fetch(`/api/v2/superBusinesses/${editCompany.id}?secret=${encodeURIComponent(secret)}`, {
         method: 'PUT',
         headers: superHeaders(),
         body: JSON.stringify({
@@ -112,7 +112,7 @@ export default function SuperAdminPage() {
 
   const quickAction = async (companyId: string, action: 'suspend' | 'activate') => {
     try {
-      const res = await fetch(`/api/superadmin/all-businesses/${companyId}?secret=${encodeURIComponent(secret)}`, {
+      const res = await fetch(`/api/v2/superBusinesses/${companyId}?secret=${encodeURIComponent(secret)}`, {
         method: 'PUT',
         headers: superHeaders(),
         body: JSON.stringify({ planStatus: action === 'suspend' ? 'suspended' : 'active' }),
