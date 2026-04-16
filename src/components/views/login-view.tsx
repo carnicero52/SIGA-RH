@@ -40,7 +40,7 @@ export function LoginView() {
         sessionStorage.removeItem('pending_qr')
         navigate('check-in', { qr: pendingQr })
       } else {
-        navigate('onboarding')
+        navigate('dashboard')
       } else {
         navigate('dashboard')
       }
