@@ -6,6 +6,17 @@ export async function GET(request: NextRequest) {
   try {
     const { companyId } = getAuthPayload(request)
 
+    const company = await db.company.findUnique({
+      where: { id: companyId },
+      select: { active: true, planStatus: true }
+    })
+    if (!company || company.active === false) {
+      return NextResponse.json({ error: 'Cuenta suspendida' }, { status: 403 })
+    }
+    if (company.planStatus === 'suspended') {
+      return NextResponse.json({ error: 'Plan suspendido' }, { status: 403 })
+    }
+
     const shifts = await db.shift.findMany({
       where: { active: true, companyId },
       include: {
@@ -24,6 +35,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { companyId } = getAuthPayload(request)
+
+    const company = await db.company.findUnique({
+      where: { id: companyId },
+      select: { active: true, planStatus: true }
+    })
+    if (!company || company.active === false) {
+      return NextResponse.json({ error: 'Cuenta suspendida' }, { status: 403 })
+    }
+    if (company.planStatus === 'suspended') {
+      return NextResponse.json({ error: 'Plan suspendido' }, { status: 403 })
+    }
     const body = await request.json()
     const { name, startTime, endTime, breakMinutes, toleranceMinutes, type, color } = body
 

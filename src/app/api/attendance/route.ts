@@ -6,6 +6,18 @@ export async function GET(request: NextRequest) {
   try {
     const { companyId } = getAuthPayload(request)
 
+    // Check if company is active
+    const company = await db.company.findUnique({
+      where: { id: companyId },
+      select: { active: true, planStatus: true }
+    })
+    if (!company || company.active === false) {
+      return NextResponse.json({ error: 'Cuenta suspendida' }, { status: 403 })
+    }
+    if (company.planStatus === 'suspended') {
+      return NextResponse.json({ error: 'Plan suspendido' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')

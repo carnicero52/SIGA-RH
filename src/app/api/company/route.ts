@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const { companyId } = getAuthPayload(request)
 
+
     const company = await db.company.findUnique({
       where: { id: companyId },
     })
@@ -24,6 +25,17 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const { companyId } = getAuthPayload(request)
+
+    const company = await db.company.findUnique({
+      where: { id: companyId },
+      select: { active: true, planStatus: true }
+    })
+    if (!company || company.active === false) {
+      return NextResponse.json({ error: 'Cuenta suspendida' }, { status: 403 })
+    }
+    if (company.planStatus === 'suspended') {
+      return NextResponse.json({ error: 'Plan suspendido' }, { status: 403 })
+    }
     const body = await request.json()
 
     const existing = await db.company.findUnique({ where: { id: companyId } })
@@ -31,7 +43,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 })
     }
 
-    const company = await db.company.update({
+    const updatedCompany = await db.company.update({
       where: { id: companyId },
       data: {
         ...(body.name !== undefined && { name: body.name }),
