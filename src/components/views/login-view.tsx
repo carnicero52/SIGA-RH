@@ -41,8 +41,6 @@ export function LoginView() {
         navigate('check-in', { qr: pendingQr })
       } else {
         navigate('dashboard')
-      } else {
-        navigate('dashboard')
       }
     } catch {
       toast.error('Error de conexión')
