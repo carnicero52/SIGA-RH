@@ -99,7 +99,10 @@ export default function SuperAdminPage() {
           trialEndsAt: editCompany.trialEndsAt || null,
         }),
       })
-      if (!res.ok) throw new Error('Error al guardar')
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Error al guardar')
+      }
       toast.success('Empresa actualizada')
       setEditCompany(null)
       fetchCompanies()

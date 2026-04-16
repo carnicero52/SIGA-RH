@@ -44,19 +44,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     
     if (company._count.branches > limits.maxBranches) {
       return NextResponse.json({ 
-        error: `No puedes cambiar a plan ${newPlan}: tienes ${company._count.branches} sucursales y el límite es ${limits.maxBranches}` 
+        error: `⚠️ La empresa tiene ${company._count.branches} sucursales pero el plan Gratuito solo permite ${limits.maxBranches}. Cambia a Profesional o Empresarial primero.` 
       }, { status: 400 })
     }
     
     if (company._count.employees > limits.maxEmployees) {
       return NextResponse.json({ 
-        error: `No puedes cambiar a plan ${newPlan}: tienes ${company._count.employees} empleados y el límite es ${limits.maxEmployees}` 
+        error: `⚠️ La empresa tiene ${company._count.employees} empleados pero el plan Gratuito solo permite ${limits.maxEmployees}. Cambia a Profesional o Empresarial primero.` 
       }, { status: 400 })
     }
     
     if (company._count.departments > limits.maxDepartments) {
       return NextResponse.json({ 
-        error: `No puedes cambiar a plan ${newPlan}: tienes ${company._count.departments} departamentos y el límite es ${limits.maxDepartments}` 
+        error: `⚠️ La empresa tiene ${company._count.departments} departamentos pero el plan Gratuito solo permite ${limits.maxDepartments}. Cambia a Profesional o Empresarial primero.` 
       }, { status: 400 })
     }
     
